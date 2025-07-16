@@ -4,14 +4,18 @@ import com.redmath.newsapp.dto.NewsRequest;
 import com.redmath.newsapp.dto.NewsResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/news")
 @RequiredArgsConstructor
+@Slf4j
 public class NewsController {
 
     private final NewsService newsService;
@@ -19,6 +23,7 @@ public class NewsController {
     @SecurityRequirement(name = "BearerAuth")
     @PreAuthorize("hasRole('EDITOR')")
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public NewsResponse create(@RequestBody NewsRequest request) {
         return newsService.create(request);
     }
@@ -62,6 +67,12 @@ public class NewsController {
     @GetMapping("/search")
     public List<NewsResponse> search(@RequestParam String keyword) {
         return newsService.searchNews(keyword);
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public Map<String,String> handlerRuntimeException(RuntimeException ex){
+        log.info("exception::"+ex.getMessage());
+        return Map.of("news_error:",ex.getMessage());
     }
 
 }

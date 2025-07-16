@@ -34,7 +34,7 @@ public class SecurityConfig {
                         "/news/category/**",
                         "/news/editor/**",
                         "/news/search"
-                ).    permitAll().anyRequest().authenticated()).
+                ).permitAll().anyRequest().authenticated()).
                 sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).
                 addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
