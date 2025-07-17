@@ -80,4 +80,9 @@ public class BookApiTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.title", Matchers.is("Refactoring (2nd Edition)")))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.publishedYear", Matchers.is(2018)));
     }
+
+    @Test
+    public void testDeleteBookSuccess() throws Exception{
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/books/124")).andDo(MockMvcResultHandlers.print()).andExpect(MockMvcResultMatchers.status().isNoContent());
+    }
 }

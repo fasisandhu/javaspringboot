@@ -1,56 +1,12 @@
 databaseChangeLog:
-  - changeSet:
-      id: 001
-      author: faseeh
-      changes:
-        - createTable:
-            tableName: books
-            columns:
-              - column:
-                  name: id
-                  type: BIGINT
-                  autoIncrement: true
-                  constraints:
-                    primaryKey: true
-                    nullable: false
-              - column:
-                  name: title
-                  type: VARCHAR(255)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: author
-                  type: VARCHAR(255)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: isbn
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false
-                    unique: true
-              - column:
-                  name: published_year
-                  type: INT
+  - include:
+      file: db/changelog/db.changelog-books-ddl.yaml
 
-  - changeSet:
-      id: 002
-      author: faseeh
-      changes:
-        - insert:
-            tableName: books
-            columns:
-              - column: { name: id, valueNumeric: 123 }
-              - column: { name: title, value: "Clean Code" }
-              - column: { name: author, value: "Robert C. Martin" }
-              - column: { name: isbn, value: "9780132350884" }
-              - column: { name: published_year, valueNumeric: 2008 }
+  - include:
+      file: db/changelog/db.changelog-books-dml.yaml
 
-        - insert:
-            tableName: books
-            columns:
-              - column: { name: id, valueNumeric: 124 }
-              - column: { name: title, value: "Refactoring" }
-              - column: { name: author, value: "Martin Fowler" }
-              - column: { name: isbn, value: "9780201485677" }
-              - column: { name: published_year, valueNumeric: 1999 }
+  - include:
+      file: db/changelog/db.changelog-users-ddl.yaml
+
+  - include:
+      file: db/changelog/db.changelog-users-dml.yaml

@@ -1,6 +1,5 @@
-package com.redmath.bookmanagement.repository;
+package com.redmath.bookmanagement.books;
 
-import com.redmath.bookmanagement.model.Book;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

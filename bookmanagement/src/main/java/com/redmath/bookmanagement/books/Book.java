@@ -1,4 +1,4 @@
-package com.redmath.bookmanagement.model;
+package com.redmath.bookmanagement.books;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003
+      author: faseeh
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: username
+                  value: editor1
+              - column:
+                  name: password
+                  value: editorpass
+              - column:
+                  name: role
+                  value: EDITOR
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: username
+                  value: viewer1
+              - column:
+                  name: password
+                  value: viewerpass
+              - column:
+                  name: role
+                  value: VIEWER

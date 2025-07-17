@@ -1,7 +1,5 @@
-package com.redmath.bookmanagement.service;
+package com.redmath.bookmanagement.books;
 
-import com.redmath.bookmanagement.model.Book;
-import com.redmath.bookmanagement.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

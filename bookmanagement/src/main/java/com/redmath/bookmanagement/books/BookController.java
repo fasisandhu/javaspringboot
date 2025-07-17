@@ -1,7 +1,5 @@
-package com.redmath.bookmanagement.controller;
+package com.redmath.bookmanagement.books;
 
-import com.redmath.bookmanagement.model.Book;
-import com.redmath.bookmanagement.service.BookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
