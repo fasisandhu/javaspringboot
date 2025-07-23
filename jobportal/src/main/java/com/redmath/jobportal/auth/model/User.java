@@ -1,4 +1,4 @@
-package com.redmath.jobportal.auth.entity;
+package com.redmath.jobportal.auth.model;
 
 
 import jakarta.persistence.*;
@@ -32,7 +32,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
-        return List.of(new SimpleGrantedAuthority("Role_"+role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_"+role.name()));
     }
 
     @Override public boolean isAccountNonExpired() { return true; }

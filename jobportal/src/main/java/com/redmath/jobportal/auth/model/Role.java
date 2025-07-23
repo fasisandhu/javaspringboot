@@ -1,4 +1,4 @@
-package com.redmath.jobportal.auth.entity;
+package com.redmath.jobportal.auth.model;
 
 public enum Role {
     ADMIN,

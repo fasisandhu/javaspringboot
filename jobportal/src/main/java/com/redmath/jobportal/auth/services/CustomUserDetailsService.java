@@ -1,6 +1,6 @@
 package com.redmath.jobportal.auth.services;
 
-import com.redmath.jobportal.auth.entity.User;
+import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package com.redmath.jobportal.auth.dtos;
 
 
-import com.redmath.jobportal.auth.entity.Role;
+import com.redmath.jobportal.auth.model.Role;
 import lombok.Data;
 
 @Data

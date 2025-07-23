@@ -1,6 +1,6 @@
 package com.redmath.jobportal.auth.repository;
 
-import com.redmath.jobportal.auth.entity.User;
+import com.redmath.jobportal.auth.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
