@@ -10,9 +10,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
@@ -23,21 +25,34 @@ public class SecurityConfig {
         this.appUserService=appUserService;
     }
 
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+//        http.authorizeHttpRequests(auth->auth.requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("VIEWER", "EDITOR")
+//                .requestMatchers(HttpMethod.POST, "/api/books/**").hasRole("EDITOR")
+//                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("EDITOR")
+//                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("EDITOR")
+//                .anyRequest().authenticated()
+//        ).formLogin(Customizer.withDefaults()).httpBasic(Customizer.withDefaults()).userDetailsService(appUserService);
+//
+//        return http.build();
+//    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        http.authorizeHttpRequests(auth->auth.requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("VIEWER", "EDITOR")
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.formLogin(Customizer.withDefaults()).httpBasic(Customizer.withDefaults());
+        http.authorizeHttpRequests(config -> config.requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("VIEWER", "EDITOR")
                 .requestMatchers(HttpMethod.POST, "/api/books/**").hasRole("EDITOR")
                 .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("EDITOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("EDITOR")
-                .anyRequest().authenticated()
-        ).formLogin(Customizer.withDefaults()).httpBasic(Customizer.withDefaults()).userDetailsService(appUserService);
-
+                .anyRequest().authenticated());
+        http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ⚠ Plain-text passwords (for learning only)
+        return new BCryptPasswordEncoder(); // ⚠ Plain-text passwords (for learning only)
     }
 
     @Bean

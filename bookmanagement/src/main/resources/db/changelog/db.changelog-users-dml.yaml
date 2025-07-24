@@ -14,7 +14,7 @@ databaseChangeLog:
                   value: editor1
               - column:
                   name: password
-                  value: editorpass
+                  value: $2a$10$SaGUPWj3wCwOq6lcvGGsYu2T6cYCvz258y2hgdnrPaB708yRCgsJa
               - column:
                   name: role
                   value: EDITOR
@@ -29,7 +29,7 @@ databaseChangeLog:
                   value: viewer1
               - column:
                   name: password
-                  value: viewerpass
+                  value: $2a$10$.LssxfM8xBJKGQ7S/3ymruiig9/oHYc6FxDqogMBTwJ9DvtIqx/MW
               - column:
                   name: role
                   value: VIEWER

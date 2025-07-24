@@ -4,11 +4,13 @@ package com.redmath.jobportal.application.service;
 import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.repository.ApplicationRepository;
+import com.redmath.jobportal.auth.services.CustomOAuth2User;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
@@ -81,8 +84,23 @@ public class ApplicationService {
     }
 
     private User getLoggedInUser(Authentication auth) {
-        String username = auth.getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new SecurityException("Not authenticated");
+        }
+
+        if (auth.getPrincipal() instanceof CustomOAuth2User) {
+            CustomOAuth2User oauthUser = (CustomOAuth2User) auth.getPrincipal();
+            String email = oauthUser.getEmail();
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+        // Handle other authentication types if needed
+        throw new UnsupportedOperationException("Unsupported authentication type");
     }
+
+//    private User getLoggedInUser(Authentication auth) {
+//        String username = auth.getName();
+//        return userRepository.findByUsername(username)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//    }
 }
