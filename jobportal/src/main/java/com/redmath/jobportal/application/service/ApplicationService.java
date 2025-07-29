@@ -1,14 +1,13 @@
-// src/main/java/com/jobportal/application/service/ApplicationService.java
 package com.redmath.jobportal.application.service;
 
 import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.repository.ApplicationRepository;
-import com.redmath.jobportal.auth.services.CustomOAuth2User;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
+import com.redmath.jobportal.exceptions.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -27,13 +26,19 @@ public class ApplicationService {
     private final UserRepository userRepository;
 
     public Application applyToJob(Long jobId, Authentication auth) {
-        String username = auth.getName();
+        String email = auth.getName();
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new JobNotFoundException("Job not found with id: " + jobId));
+
+        // Check for duplicate application
+        boolean alreadyApplied = applicationRepository.existsByUserAndJob(user, job);
+        if (alreadyApplied) {
+            throw new DuplicateApplicationException("You have already applied for this job");
+        }
 
         Application application = Application.builder()
                 .job(job)
@@ -55,7 +60,7 @@ public class ApplicationService {
 
     public List<ApplicationDto> getApplicationsForAllPostedJobs(Authentication auth) {
         User employer = getLoggedInUser(auth);
-        List<Job> jobsPosted = jobRepository.findByPostedBy(employer.getUsername());
+        List<Job> jobsPosted = jobRepository.findByPostedBy(employer.getEmail());
 
         return applicationRepository.findAll().stream()
                 .filter(app -> jobsPosted.contains(app.getJob()))
@@ -69,10 +74,10 @@ public class ApplicationService {
     public List<ApplicationDto> getApplicationsForSpecificPostedJob(Authentication auth, Long jobId) {
         User employer = getLoggedInUser(auth);
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new JobNotFoundException("Job not found with id: " + jobId));
 
-        if (!job.getPostedBy().equals(employer.getUsername())) {
-            throw new RuntimeException("Unauthorized: This job was not posted by you");
+        if (!job.getPostedBy().equals(employer.getEmail())) {
+            throw new UnauthorizedAccessException("Unauthorized: This job was not posted by you");
         }
 
         return applicationRepository.findByJob(job).stream()
@@ -84,23 +89,8 @@ public class ApplicationService {
     }
 
     private User getLoggedInUser(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new SecurityException("Not authenticated");
-        }
-
-        if (auth.getPrincipal() instanceof CustomOAuth2User) {
-            CustomOAuth2User oauthUser = (CustomOAuth2User) auth.getPrincipal();
-            String email = oauthUser.getEmail();
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-        }
-        // Handle other authentication types if needed
-        throw new UnsupportedOperationException("Unsupported authentication type");
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
-
-//    private User getLoggedInUser(Authentication auth) {
-//        String username = auth.getName();
-//        return userRepository.findByUsername(username)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//    }
 }

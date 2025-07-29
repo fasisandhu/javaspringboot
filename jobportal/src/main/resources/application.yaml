@@ -12,15 +12,18 @@ spring:
       enabled: true
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id:
-            client-secret: 
+            client-id: 
+            client-secret:
             scope: profile,email
         provider:
           google:
@@ -32,3 +35,28 @@ spring:
 jwt:
   signing:
     key: mysecretkey1234567890mysecretkey1234567890
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'  # Expose all actuator endpoints
+
+  tracing:
+    enabled: true
+    otlp:
+      tracing:
+        endpoint: http://localhost:4318/v1/traces
+    export:
+      otlp:
+        enabled: true
+        endpoint: http://localhost:4317 # This is the default OTLP endpoint
+        headers:
+          "X-OTLP-Protocol": "grpc"   # Optional, if needed for OTLP gRPC communication
+
+  metrics:
+    export:
+      otlp:
+        enabled: true
+        endpoint: http://localhost:4317 # Same endpoint for metrics export

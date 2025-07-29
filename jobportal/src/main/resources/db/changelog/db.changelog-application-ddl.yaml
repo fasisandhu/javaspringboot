@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: MFS
+      changes:
+        - createTable:
+            tableName: application
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: job_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2
+      author: MFS
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: application
+            baseColumnNames: job_id
+            constraintName: fk_application_job
+            referencedTableName: job
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 3
+      author: MFS
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: application
+            baseColumnNames: user_id
+            constraintName: fk_application_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE

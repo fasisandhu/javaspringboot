@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/db.changelog-user-ddl.yaml
+  - include:
+      file: db/changelog/db.changelog-user-dml.yaml
+  - include:
+      file: db/changelog/db.changelog-job-ddl.yaml
+  - include:
+      file: db/changelog/db.changelog-job-dml.yaml
+  - include:
+      file: db/changelog/db.changelog-application-ddl.yaml
+  - include:
+      file: db/changelog/db.changelog-application-dml.yaml

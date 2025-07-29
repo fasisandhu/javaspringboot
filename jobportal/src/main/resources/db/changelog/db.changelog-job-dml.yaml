@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: MFS
+      changes:
+        - insert:
+            tableName: job
+            columns:
+              - column:
+                  name: title
+                  value: 'Software Engineer'
+              - column:
+                  name: description
+                  value: 'Develop and maintain software applications.'
+              - column:
+                  name: company
+                  value: 'TechCorp Inc.'
+              - column:
+                  name: remote
+                  value: 'true'
+              - column:
+                  name: salary
+                  value: '85000'
+              - column:
+                  name: posted_by
+                  value: 'Test Employer'

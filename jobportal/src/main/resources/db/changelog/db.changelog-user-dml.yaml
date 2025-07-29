@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: MFS
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  value: 'employer@x.com'
+              - column:
+                  name: password
+                  value: '$2a$10$EGB2TiNLM56rR/NW7fwL2Oz65R5a3HrMvTwVNmx/kQGKdFF1RIbkK'
+              - column:
+                  name: name
+                  value: 'Test Employer'
+              - column:
+                  name: role
+                  value: 'EMPLOYER'
+              - column:
+                  name: provider
+                  value: 'LOCAL'
+
+  - changeSet:
+      id: 2
+      author: MFS
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  value: 'applicant@x.com'
+              - column:
+                  name: password
+                  value: '$2a$10$Z1PjL6NV18tu.JV5rHpbN.tyizGtyt78d7yVaPdElQ7XrkZFt75qO'
+              - column:
+                  name: name
+                  value: 'Test Applicant'
+              - column:
+                  name: role
+                  value: 'APPLICANT'
+              - column:
+                  name: provider
+                  value: 'LOCAL'

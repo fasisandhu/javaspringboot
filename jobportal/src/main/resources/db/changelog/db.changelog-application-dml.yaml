@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: MFS
+      changes:
+        - insert:
+            tableName: application
+            columns:
+              - column:
+                  name: job_id
+                  value: 1
+              - column:
+                  name: user_id
+                  value: 2
+
