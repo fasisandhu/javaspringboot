@@ -22,6 +22,7 @@ public class User {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
     private Role role;
 
     @Enumerated(EnumType.STRING)

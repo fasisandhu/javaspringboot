@@ -1,3 +1,6 @@
+app:
+  frontend:
+    url: http://localhost:3000  # URL of the frontend application
 server:
   port: 8080
 
@@ -23,7 +26,7 @@ spring:
         registration:
           google:
             client-id: 
-            client-secret:
+            client-secret: 
             scope: profile,email
         provider:
           google:

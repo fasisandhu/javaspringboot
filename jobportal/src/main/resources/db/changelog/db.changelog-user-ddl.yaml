@@ -32,7 +32,7 @@ databaseChangeLog:
                   name: role
                   type: varchar(255)
                   constraints:
-                    nullable: false
+                    nullable: true
               - column:
                   name: provider
                   type: varchar(255)

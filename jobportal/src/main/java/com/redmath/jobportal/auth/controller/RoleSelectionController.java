@@ -3,97 +3,112 @@ package com.redmath.jobportal.auth.controller;
 import com.redmath.jobportal.auth.model.Role;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/auth")
 public class RoleSelectionController {
 
     private final UserRepository userRepository;
     private final JwtEncoder jwtEncoder;
 
-    public RoleSelectionController(UserRepository userRepository,JwtEncoder jwtEncoder) {
+    public RoleSelectionController(UserRepository userRepository, JwtEncoder jwtEncoder) {
         this.userRepository = userRepository;
         this.jwtEncoder = jwtEncoder;
     }
-
-    @GetMapping("/auth/select-role")
-    public String showRoleSelection(Principal principal, Model model) {
+    @GetMapping("/user-role")
+    public ResponseEntity<Map<String, Object>> getUserRole(Principal principal) {
         if (principal == null) {
-            // If no principal, redirect to login
-            return "redirect:/oauth2/authorization/google";
-        }
-
-        String email = null;
-
-        if (principal instanceof OAuth2AuthenticationToken)
-        {
-            OAuth2User oauth2User = ((OAuth2AuthenticationToken) principal).getPrincipal();
-            email = oauth2User.getAttribute("email");
-        }
-        else
-        {
-            email = principal.getName();
-        }
-
-        if (email == null) {
-            return "redirect:/oauth2/authorization/google";
-        }
-
-        // Add email and roles to the model
-        model.addAttribute("email", email);
-        model.addAttribute("roles", Arrays.asList("APPLICANT", "EMPLOYER"));
-
-        return "role-selection";
-    }
-
-    @PostMapping("/auth/select-role")
-    public void processRoleSelection(
-            @RequestParam("role") String role,
-            Principal principal,
-            HttpServletResponse response) throws IOException {
-
-        if (principal == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Not authenticated");
-            return;
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
         }
 
         String email = getEmailFromPrincipal(principal);
         if (email == null) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Email not found");
-            return;
+            return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("email", email);
+        response.put("role", user.getRole() != null ? user.getRole().name() : null);
+        response.put("role_selected", user.getRole() != null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/roles")
+    public ResponseEntity<Map<String, Object>> getAvailableRoles(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
+
+        String email = getEmailFromPrincipal(principal);
+        if (email == null) {
+            return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("email", email);
+        response.put("roles", Arrays.asList("APPLICANT", "EMPLOYER"));
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/select-role")
+    public ResponseEntity<Map<String, Object>> selectRole(
+            @RequestBody Map<String, String> request,
+            Principal principal) {
+
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
+
+        String role = request.get("role");
+        if (role == null || role.trim().isEmpty()) {
+            return ResponseEntity.status(400).body(Map.of("error", "Role is required"));
+        }
+
+        String email = getEmailFromPrincipal(principal);
+        if (email == null) {
+            return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
 
         try {
             Role selectedRole = Role.valueOf(role.toUpperCase());
             user.setRole(selectedRole);
             userRepository.save(user);
 
-            // Generate JWT and return as JSON
-            generateJwtResponse(response, email, user);
+            Map<String, Object> tokenResponse = generateJwtResponse(email, user);
+            return ResponseEntity.ok(tokenResponse);
         } catch (IllegalArgumentException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid role selected");
+            return ResponseEntity.status(400).body(Map.of("error", "Invalid role selected"));
         }
     }
 
-    private void generateJwtResponse(HttpServletResponse response, String email, User user) throws IOException {
+    private Map<String, Object> generateJwtResponse(String email, User user) {
         long expirySeconds = 3600;
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -105,14 +120,12 @@ public class RoleSelectionController {
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
         Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
 
-        String json = String.format(
-                "{\"token_type\":\"Bearer\",\"access_token\":\"%s\",\"expires_in\":%d}",
-                jwt.getTokenValue(),
-                expirySeconds
-        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("token_type", "Bearer");
+        response.put("access_token", jwt.getTokenValue());
+        response.put("expires_in", expirySeconds);
 
-        response.setContentType("application/json");
-        response.getWriter().print(json);
+        return response;
     }
 
     private String getEmailFromPrincipal(Principal principal) {

@@ -1,6 +1,5 @@
 package com.redmath.jobportal.config;
 
-
 import com.redmath.jobportal.auth.services.CustomUserDetailsService;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -24,8 +23,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -40,8 +43,12 @@ public class ApiSecurityConfiguration {
     @Value("${jwt.signing.key}")
     private byte[] signingKey;
 
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtEncoder jwtEncoder) throws Exception {
+        // Enable CORS
+        httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
         httpSecurity.formLogin(config -> config.successHandler((request, response, auth) -> {
             long expirySeconds = 3600;
             JwtClaimsSet claims = JwtClaimsSet.builder().subject(auth.getName()).expiresAt(Instant.now().plusSeconds(expirySeconds)).build();
@@ -59,14 +66,18 @@ public class ApiSecurityConfiguration {
                         "/v3/api-docs/**",
                         "/oauth2/**",
                         "/login/oauth2/**",
-                        "/auth/select-role",
                         "/h2-console/**",
                         "/",
                         "/actuator/**"
                 ).permitAll()
+                // Allow role selection endpoints for authenticated users (even without roles)
+                .requestMatchers("/api/auth/roles", "/api/auth/select-role").authenticated()
+                // Remove the old endpoint
+                // .requestMatchers("/auth/select-role").permitAll()
                 .anyRequest().authenticated()
         );
-        // Configure OAuth2 login (new)
+
+        // Configure OAuth2 login
         httpSecurity.oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2SuccessHandler)
                 .userInfoEndpoint(userInfo -> userInfo
@@ -79,31 +90,29 @@ public class ApiSecurityConfiguration {
             return new JwtAuthenticationToken(token, user.getAuthorities());
         })));
 
-//        httpSecurity.csrf(csrf->csrf.disable());
         httpSecurity.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         httpSecurity.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
 
-
         return httpSecurity.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-//    private void generateJwtResponse(HttpServletResponse response, Authentication auth,JwtEncoder jwtEncoder)
-//    throws IOException {
-//        long expirySeconds = 3600;
-//        JwtClaimsSet claims = JwtClaimsSet.builder()
-//                .subject(auth.getName())
-//                .expiresAt(Instant.now().plusSeconds(expirySeconds))
-//                .build();
-//        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
-//        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
-//        String json = "{\"token_type\":\"Bearer\",\"access_token\":\"" + jwt.getTokenValue() + "\",\"expires_in\":" + expirySeconds + "}";
-//        response.getWriter().print(json);
-//    }
 
     @Bean
     public AuthenticationManager authenticationManager() {
@@ -112,6 +121,4 @@ public class ApiSecurityConfiguration {
         authProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(List.of(authProvider));
     }
-
-
 }
