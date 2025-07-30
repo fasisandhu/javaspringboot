@@ -1,6 +1,7 @@
 package com.redmath.jobportal.application.service;
 
-import com.redmath.jobportal.application.dto.ApplicationDto;
+import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
+import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.repository.ApplicationRepository;
 import com.redmath.jobportal.job.model.Job;
@@ -48,30 +49,34 @@ public class ApplicationService {
         return applicationRepository.save(application);
     }
 
-    public List<ApplicationDto> getApplicationsByUser(Authentication auth) {
+    public List<ApplicationUserDto> getApplicationsByUser(Authentication auth) {
         User user = getLoggedInUser(auth);
         return applicationRepository.findByUser(user).stream()
-                .map(app -> new ApplicationDto(
+                .map(app -> new ApplicationUserDto(
                         app.getId(),
                         app.getJob().getId(),
-                        app.getJob().getTitle()))
+                        app.getJob().getTitle(),
+                        app.getJob().getCompany()))
                 .collect(Collectors.toList());
     }
 
-    public List<ApplicationDto> getApplicationsForAllPostedJobs(Authentication auth) {
+    public List<ApplicationRecruiterDto> getApplicationsForAllPostedJobs(Authentication auth) {
         User employer = getLoggedInUser(auth);
         List<Job> jobsPosted = jobRepository.findByPostedBy(employer.getEmail());
 
         return applicationRepository.findAll().stream()
                 .filter(app -> jobsPosted.contains(app.getJob()))
-                .map(app -> new ApplicationDto(
+                .map(app -> new ApplicationRecruiterDto(
                         app.getId(),
                         app.getJob().getId(),
-                        app.getJob().getTitle()))
+                        app.getJob().getTitle(),
+                        app.getJob().getCompany(),
+                        app.getUser().getName(),
+                        app.getUser().getEmail()))
                 .collect(Collectors.toList());
     }
 
-    public List<ApplicationDto> getApplicationsForSpecificPostedJob(Authentication auth, Long jobId) {
+    public List<ApplicationRecruiterDto> getApplicationsForSpecificPostedJob(Authentication auth, Long jobId) {
         User employer = getLoggedInUser(auth);
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new JobNotFoundException("Job not found with id: " + jobId));
@@ -81,10 +86,13 @@ public class ApplicationService {
         }
 
         return applicationRepository.findByJob(job).stream()
-                .map(app -> new ApplicationDto(
+                .map(app -> new ApplicationRecruiterDto(
                         app.getId(),
                         job.getId(),
-                        job.getTitle()))
+                        job.getTitle(),
+                        job.getCompany(),
+                        app.getUser().getName(),
+                        app.getUser().getEmail()))
                 .collect(Collectors.toList());
     }
 

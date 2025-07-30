@@ -1,6 +1,7 @@
 package com.redmath.jobportal.application.controller;
 
-import com.redmath.jobportal.application.dto.ApplicationDto;
+import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
+import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.service.ApplicationService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -48,19 +49,19 @@ public class ApplicatonController {
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('APPLICANT')")
-    public List<ApplicationDto> myApplications(Authentication auth) {
+    public List<ApplicationUserDto> myApplications(Authentication auth) {
         return applicationService.getApplicationsByUser(auth);
     }
 
     @GetMapping("/recruiter/all")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public List<ApplicationDto> getApplicationsForAllJobsByRecruiter(Authentication auth) {
+    public List<ApplicationRecruiterDto> getApplicationsForAllJobsByRecruiter(Authentication auth) {
         return applicationService.getApplicationsForAllPostedJobs(auth);
     }
 
     @GetMapping("/recruiter/job/{jobId}")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public List<ApplicationDto> getApplicationsForJobByRecruiter(@PathVariable Long jobId, Authentication auth) {
+    public List<ApplicationRecruiterDto> getApplicationsForJobByRecruiter(@PathVariable Long jobId, Authentication auth) {
         return applicationService.getApplicationsForSpecificPostedJob(auth, jobId);
     }
 

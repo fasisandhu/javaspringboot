@@ -23,4 +23,4 @@ databaseChangeLog:
                   value: '85000'
               - column:
                   name: posted_by
-                  value: 'Test Employer'
+                  value: 'employer@x.com'

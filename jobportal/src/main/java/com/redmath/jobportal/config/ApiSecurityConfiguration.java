@@ -2,8 +2,10 @@ package com.redmath.jobportal.config;
 
 import com.redmath.jobportal.auth.services.CustomUserDetailsService;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +37,17 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 @Import(JwtConfiguration.class)
-@OpenAPIDefinition(info = @Info(title = "Job Portal API", version = "v1"), security = @SecurityRequirement(name = "bearerAuth"))
+@OpenAPIDefinition(
+        info = @Info(title = "Job Portal API", version = "v1", description = "Job Portal API Documentation"),
+        security = @SecurityRequirement(name = "bearerAuth")
+)
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT",
+        description = "Enter JWT Bearer token"
+)
 public class ApiSecurityConfiguration {
 
     private final CustomUserDetailsService customUserDetailsService;
@@ -63,6 +75,15 @@ public class ApiSecurityConfiguration {
                         "/auth/register",
                         "/auth/api/register",
                         "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/swagger-config",
+                        "/v3/api-docs/swagger-ui.html",
+                        "/v3/api-docs/swagger-ui/**",
+                        "/v3/api-docs",
+                        "/v3/api-docs.yaml",
+                        "/v3/api-docs.json",
+                        "/v3/api-docs.yaml/**",
+                        "/v3/api-docs.json/**",
                         "/v3/api-docs/**",
                         "/oauth2/**",
                         "/login/oauth2/**",
@@ -121,4 +142,5 @@ public class ApiSecurityConfiguration {
         authProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(List.of(authProvider));
     }
+
 }

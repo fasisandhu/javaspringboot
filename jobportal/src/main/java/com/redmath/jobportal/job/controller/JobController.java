@@ -1,8 +1,10 @@
 package com.redmath.jobportal.job.controller;
 
+import com.redmath.jobportal.exceptions.JobNotFoundException;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.service.JobService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -43,9 +45,10 @@ public class JobController {
         return jobService.getAllJobs();
     }
 
-    @PostMapping("/{id}")
-    public ResponseEntity<Job> getJobById(@PathVariable Long id){
-        return jobService.getJobById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJobById(@PathVariable Long id) {
+        Job job = jobService.getJobById(id); // Service throws exception if not found
+        return ResponseEntity.ok(job);
     }
 
     @PostMapping
@@ -56,15 +59,16 @@ public class JobController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<Job> updateJob(@PathVariable Long id,@RequestBody Job job,Authentication authentication){
-        return jobService.updateJob(id,job,authentication).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job, Authentication authentication) {
+        Job updatedJob = jobService.updateJob(id, job, authentication);
+        return ResponseEntity.ok(updatedJob);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<Void> deleteJob(@PathVariable Long id, Authentication authentication) {
-        boolean deleted = jobService.deleteJob(id, authentication);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.status(403).build();
+        jobService.deleteJob(id, authentication);
+        return ResponseEntity.noContent().build();
     }
 
 

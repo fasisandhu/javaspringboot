@@ -39,6 +39,11 @@ jwt:
   signing:
     key: mysecretkey1234567890mysecretkey1234567890
 
+springdoc:
+    api-docs:
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui.html
 
 management:
   endpoints:

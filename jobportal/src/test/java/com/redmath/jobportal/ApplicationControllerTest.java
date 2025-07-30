@@ -1,10 +1,10 @@
 package com.redmath.jobportal;
 
 import com.redmath.jobportal.application.controller.ApplicatonController;
-import com.redmath.jobportal.application.dto.ApplicationDto;
+import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
+import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.service.ApplicationService;
-import com.redmath.jobportal.config.ApiSecurityConfiguration;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +32,8 @@ public class ApplicationControllerTest {
     @MockBean
     private ApplicationService applicationService;
 
-    private ApplicationDto sampleDto() {
-        return new ApplicationDto(1L, 101L, "Java Developer");
+    private ApplicationUserDto sampleDto() {
+        return new ApplicationUserDto(1L, 101L, "Java Developer","Tech Corp");
     }
 
     private Application sampleApplication() {
@@ -72,23 +72,27 @@ public class ApplicationControllerTest {
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testGetApplicationsForAllJobs_AsEmployer_Success() throws Exception {
+        ApplicationRecruiterDto recruiterDto = new ApplicationRecruiterDto(1L, 101L, "Java Developer", "Tech Corp", "Applicant", "applicant@example.com");
         Mockito.when(applicationService.getApplicationsForAllPostedJobs(any()))
-                .thenReturn(List.of(sampleDto()));
+                .thenReturn(List.of(recruiterDto));
 
         mockMvc.perform(get("/api/v1/application/recruiter/all"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].jobTitle").value("Java Developer"));
+                .andExpect(jsonPath("$[0].jobTitle").value("Java Developer"))
+                .andExpect(jsonPath("$[0].applicantEmail").value("applicant@example.com"));
     }
 
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testGetApplicationsForSpecificJob_AsEmployer_Success() throws Exception {
+        ApplicationRecruiterDto recruiterDto = new ApplicationRecruiterDto(1L, 101L, "Java Developer", "Tech Corp", "Applicant","applicant@example.com");
         Mockito.when(applicationService.getApplicationsForSpecificPostedJob(any(), eq(101L)))
-                .thenReturn(List.of(sampleDto()));
+                .thenReturn(List.of(recruiterDto));
 
         mockMvc.perform(get("/api/v1/application/recruiter/job/101"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].jobId").value(101));
+                .andExpect(jsonPath("$[0].jobId").value(101))
+                .andExpect(jsonPath("$[0].applicantEmail").value("applicant@example.com"));
     }
 
     @Test
