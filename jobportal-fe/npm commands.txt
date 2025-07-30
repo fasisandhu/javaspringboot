@@ -1,0 +1,6 @@
+$env:PATH="D:\Installers\node-v22.17.1-win-x64;$env:PATH"
+
+Set-ExecutionPolicy Unrestricted -Scope CurrentUser -Force
+
+Unblock-File -Path "D:\Installers\node-v22.17.1-win-x64\npm.ps1"
+
