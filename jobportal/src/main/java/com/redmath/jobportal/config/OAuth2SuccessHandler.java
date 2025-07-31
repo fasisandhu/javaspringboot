@@ -136,33 +136,4 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         return name != null ? name : "Unknown";
     }
 
-    private void generateAndSendJwt(HttpServletResponse response, String email, User user) throws IOException {
-        long expirySeconds = 3600;
-
-        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
-                .subject(email)
-                .expiresAt(Instant.now().plusSeconds(expirySeconds));
-
-        // Add role to JWT claims if available, otherwise add a temporary claim
-        if (user.getRole() != null) {
-            claimsBuilder.claim("role", user.getRole().name());
-            claimsBuilder.claim("role_selected", true);
-        } else {
-            claimsBuilder.claim("role_selected", false);
-        }
-
-        JwtClaimsSet claims = claimsBuilder.build();
-        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
-        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
-
-        String json = String.format(
-                "{\"token_type\":\"Bearer\",\"access_token\":\"%s\",\"expires_in\":%d,\"role_selected\":%s}",
-                jwt.getTokenValue(),
-                expirySeconds,
-                user.getRole() != null
-        );
-
-        response.setContentType("application/json");
-        response.getWriter().print(json);
-    }
 }

@@ -16,7 +16,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     public CustomUserDetails(User user) {
         this.user = user;
-        this.needsRoleSelection = false;
+        this.needsRoleSelection = user.getRole() == null;
         this.attributes = Collections.emptyMap();
     }
 

@@ -1,10 +1,8 @@
 package com.redmath.jobportal.job.controller;
 
-import com.redmath.jobportal.exceptions.JobNotFoundException;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.service.JobService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;

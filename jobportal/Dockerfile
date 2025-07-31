@@ -1,5 +1,4 @@
-# Use OpenJDK 21 slim image and install Maven
-FROM openjdk:21-jdk-slim AS build
+FROM openjdk:24-jdk-slim AS build
 
 # Install Maven
 RUN apt-get update && \
@@ -8,34 +7,20 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /build
-
-# Copy pom.xml first to leverage Docker layer caching
-COPY pom.xml .
-
-# Download dependencies
-RUN mvn dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Build the application and create JAR
-RUN mvn clean package -DskipTests
-
-# Use JRE image for runtime
-FROM openjdk:21-jre-slim
-
-# Set working directory
 WORKDIR /app
 
-# Copy the built JAR from build stage
-COPY --from=build /build/target/jobportal-1.0-SNAPSHOT.jar jobportal.jar
+# Copy Maven files
+COPY pom.xml .
+COPY src ./src
 
-# Expose port 8080
-EXPOSE 8080
+# Build the JAR
+RUN mvn clean package -DskipTests
 
-# Set JVM options for containerized environment
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
+# Runtime stage
+FROM openjdk:24-jre-slim
 
-# Run the application using the JAR
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar jobportal.jar"]
+# Copy the JAR from build stage
+COPY --from=build /app/target/jobportal-*.jar jobportal.jar
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "jobportal.jar"]

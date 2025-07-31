@@ -20,7 +20,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -33,6 +37,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Configures security for the Job Portal API, including authentication, CORS, and JWT settings.
+ */
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -49,12 +56,11 @@ import java.util.List;
         description = "Enter JWT Bearer token"
 )
 public class ApiSecurityConfiguration {
-
     private final CustomUserDetailsService customUserDetailsService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
     @Value("${jwt.signing.key}")
     private byte[] signingKey;
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtEncoder jwtEncoder) throws Exception {
@@ -63,10 +69,14 @@ public class ApiSecurityConfiguration {
 
         httpSecurity.formLogin(config -> config.successHandler((request, response, auth) -> {
             long expirySeconds = 3600;
-            JwtClaimsSet claims = JwtClaimsSet.builder().subject(auth.getName()).expiresAt(Instant.now().plusSeconds(expirySeconds)).build();
+            JwtClaimsSet claims = JwtClaimsSet.builder()
+                    .subject(auth.getName())
+                    .expiresAt(Instant.now().plusSeconds(expirySeconds))
+                    .build();
             JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
             Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
-            String json = "{\"token_type\":\"Bearer\",\"access_token\":\"" + jwt.getTokenValue() + "\",\"expires_in\":" + expirySeconds + "}";
+            String json = String.format("{\"token_type\":\"Bearer\",\"access_token\":\"%s\",\"expires_in\":%d}",
+                    jwt.getTokenValue(), expirySeconds);
             response.getWriter().print(json);
         }).usernameParameter("email"));
 
@@ -93,8 +103,6 @@ public class ApiSecurityConfiguration {
                 ).permitAll()
                 // Allow role selection endpoints for authenticated users (even without roles)
                 .requestMatchers("/api/auth/roles", "/api/auth/select-role").authenticated()
-                // Remove the old endpoint
-                // .requestMatchers("/auth/select-role").permitAll()
                 .anyRequest().authenticated()
         );
 
@@ -112,11 +120,17 @@ public class ApiSecurityConfiguration {
         })));
 
         httpSecurity.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
-        httpSecurity.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
+        httpSecurity.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
 
         return httpSecurity.build();
     }
 
+    /**
+     * Configures CORS settings.
+     *
+     * @return the configured CORS configuration source
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -130,11 +144,21 @@ public class ApiSecurityConfiguration {
         return source;
     }
 
+    /**
+     * Configures the password encoder.
+     *
+     * @return the configured password encoder
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures the authentication manager.
+     *
+     * @return the configured authentication manager
+     */
     @Bean
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -142,5 +166,4 @@ public class ApiSecurityConfiguration {
         authProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(List.of(authProvider));
     }
-
 }

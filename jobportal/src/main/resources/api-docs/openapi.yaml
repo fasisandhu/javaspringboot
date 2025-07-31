@@ -1,0 +1,355 @@
+openapi: 3.0.1
+info:
+  title: Job Portal API
+  description: Job Portal API Documentation
+  version: v1
+servers:
+  - url: http://localhost:8080
+    description: Generated server url
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/jobs/{id}:
+    get:
+      tags:
+        - job-controller
+      operationId: getJobById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Job'
+    put:
+      tags:
+        - job-controller
+      operationId: updateJob
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Job'
+    delete:
+      tags:
+        - job-controller
+      operationId: deleteJob
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+  /auth/api/register:
+    post:
+      tags:
+        - user-controller
+      operationId: registerApi
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+  /api/v1/jobs:
+    get:
+      tags:
+        - job-controller
+      operationId: getAllJobs
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+    post:
+      tags:
+        - job-controller
+      operationId: createJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Job'
+  /api/v1/application/{jobId}:
+    post:
+      tags:
+        - applicaton-controller
+      operationId: apply
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Application'
+      security:
+        - bearerAuth: []
+  /api/auth/select-role:
+    post:
+      tags:
+        - role-selection-controller
+      operationId: selectRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/v1/application/recruiter/job/{jobId}:
+    get:
+      tags:
+        - applicaton-controller
+      operationId: getApplicationsForJobByRecruiter
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicationRecruiterDto'
+      security:
+        - bearerAuth: []
+  /api/v1/application/recruiter/all:
+    get:
+      tags:
+        - applicaton-controller
+      operationId: getApplicationsForAllJobsByRecruiter
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicationRecruiterDto'
+      security:
+        - bearerAuth: []
+  /api/v1/application/my:
+    get:
+      tags:
+        - applicaton-controller
+      operationId: myApplications
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicationUserDto'
+      security:
+        - bearerAuth: []
+  /api/auth/user-role:
+    get:
+      tags:
+        - role-selection-controller
+      operationId: getUserRole
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/auth/roles:
+    get:
+      tags:
+        - role-selection-controller
+      operationId: getAvailableRoles
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+components:
+  schemas:
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        company:
+          type: string
+        remote:
+          type: boolean
+        salary:
+          type: number
+          format: double
+        postedBy:
+          type: string
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum:
+            - ADMIN
+            - EMPLOYER
+            - APPLICANT
+        provider:
+          type: string
+          enum:
+            - LOCAL
+            - GOOGLE
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        job:
+          $ref: '#/components/schemas/Job'
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum:
+            - ADMIN
+            - EMPLOYER
+            - APPLICANT
+        provider:
+          type: string
+          enum:
+            - LOCAL
+            - GOOGLE
+    ApplicationRecruiterDto:
+      type: object
+      properties:
+        applicationId:
+          type: integer
+          format: int64
+        jobId:
+          type: integer
+          format: int64
+        jobTitle:
+          type: string
+        companyName:
+          type: string
+        applicantName:
+          type: string
+        applicantEmail:
+          type: string
+    ApplicationUserDto:
+      type: object
+      properties:
+        applicationId:
+          type: integer
+          format: int64
+        jobId:
+          type: integer
+          format: int64
+        jobTitle:
+          type: string
+        companyName:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      description: Enter JWT Bearer token
+      scheme: bearer
+      bearerFormat: JWT

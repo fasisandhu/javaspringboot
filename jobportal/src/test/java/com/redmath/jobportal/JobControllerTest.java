@@ -105,7 +105,7 @@ public class JobControllerTest {
                 .when(jobService).deleteJob(eq(1L), any());
 
         mockMvc.perform(delete("/api/v1/jobs/1").with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
     }
 
     @Test
