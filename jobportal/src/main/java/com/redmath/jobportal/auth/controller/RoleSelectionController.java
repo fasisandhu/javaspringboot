@@ -14,6 +14,7 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -62,6 +63,11 @@ public class RoleSelectionController {
             return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
         }
 
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
+
         Map<String, Object> response = new HashMap<>();
         response.put("email", email);
         response.put("roles", Arrays.asList("APPLICANT", "EMPLOYER"));
@@ -96,7 +102,7 @@ public class RoleSelectionController {
         }
 
         try {
-            Role selectedRole = Role.valueOf(role.toUpperCase());
+            Role selectedRole = Role.valueOf(role.toUpperCase(Locale.ENGLISH));
             user.setRole(selectedRole);
             userRepository.save(user);
 

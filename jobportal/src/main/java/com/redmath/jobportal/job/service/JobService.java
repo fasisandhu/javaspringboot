@@ -8,7 +8,6 @@ import com.redmath.jobportal.exceptions.UnauthorizedJobAccessException;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+//@Slf4j
 public class JobService {
 
     private final JobRepository jobRepository;
@@ -42,8 +41,8 @@ public class JobService {
                 .orElseThrow(() -> new JobNotFoundException("Job with ID " + id + " not found"));
 
         if (!existing.getPostedBy().equals(getLoggedInUser(authentication).getEmail())) {
-            log.info("job.getPostedBy() = {}", existing.getPostedBy());
-            log.info("Logged in user email = {}", getLoggedInUser(authentication).getEmail());
+//            log.info("job.getPostedBy() = {}", existing.getPostedBy());
+//            log.info("Logged in user email = {}", getLoggedInUser(authentication).getEmail());
             throw new UnauthorizedJobAccessException("You are not authorized to update this job");
         }
 
@@ -61,8 +60,8 @@ public class JobService {
                 .orElseThrow(() -> new JobNotFoundException("Job with ID " + id + " not found"));
 
         if (!job.getPostedBy().equals(getLoggedInUser(authentication).getEmail())) {
-            log.info("job.getPostedBy() = {}", job.getPostedBy());
-            log.info("Logged in user email = {}", getLoggedInUser(authentication).getEmail());
+//            log.info("job.getPostedBy() = {}", job.getPostedBy());
+//            log.info("Logged in user email = {}", getLoggedInUser(authentication).getEmail());
             throw new UnauthorizedJobAccessException("You are not authorized to delete this job");
         }
 

@@ -22,5 +22,5 @@ public class Application {
     @ManyToOne(optional = false)
     private User user;
 
-    
+
 }

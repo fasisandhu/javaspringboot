@@ -6,7 +6,6 @@ import com.redmath.jobportal.auth.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -22,7 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-@Slf4j
+//@Slf4j
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtEncoder jwtEncoder;
@@ -41,7 +40,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
         if (!(authentication instanceof OAuth2AuthenticationToken)) {
-            log.error("Authentication is not OAuth2AuthenticationToken");
+//            log.error("Authentication is not OAuth2AuthenticationToken");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Invalid authentication type");
             return;
         }
@@ -51,14 +50,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         Map<String, Object> attributes = oauth2User.getAttributes();
 
         if (attributes == null || attributes.isEmpty()) {
-            log.error("OAuth2 user attributes are null or empty");
+//            log.error("OAuth2 user attributes are null or empty");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "OAuth2 provider didn't return user attributes");
             return;
         }
 
         String email = getEmailFromAttributes(attributes);
         if (email == null || email.isEmpty()) {
-            log.error("Email not found in OAuth2 user attributes");
+//            log.error("Email not found in OAuth2 user attributes");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Email not provided by OAuth2 provider");
             return;
         }
@@ -102,7 +101,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // Build redirect URL with token and role selection status
         String redirectUrl = buildRedirectUrl(jwt.getTokenValue(), user.getRole() != null);
 
-        log.info("Redirecting OAuth2 user to frontend: {}", redirectUrl);
+//        log.info("Redirecting OAuth2 user to frontend: {}", redirectUrl);
         response.sendRedirect(redirectUrl);
     }
 

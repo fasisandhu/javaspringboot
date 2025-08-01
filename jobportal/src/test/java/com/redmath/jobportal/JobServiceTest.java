@@ -224,7 +224,7 @@ public class JobServiceTest {
 
         assertEquals("You are not authorized to update this job", exception.getMessage());
         verify(jobRepository).findById(1L);
-        verify(userRepository,times(2)).findByEmail("another@example.com");
+        verify(userRepository,times(1)).findByEmail("another@example.com");
         verify(jobRepository, never()).save(any(Job.class));
     }
 
@@ -284,7 +284,7 @@ public class JobServiceTest {
 
         assertEquals("You are not authorized to delete this job", exception.getMessage());
         verify(jobRepository).findById(1L);
-        verify(userRepository,times(2)).findByEmail("another@example.com");
+        verify(userRepository,times(1)).findByEmail("another@example.com");
         verify(jobRepository, never()).deleteById(any());
     }
 

@@ -37,6 +37,14 @@ public class UserController {
             Model model,
             RedirectAttributes redirectAttributes) {
 
+        if (name.isBlank() || email.isBlank() || password.isBlank() || role.isBlank()) {
+            model.addAttribute("error", "All fields are required.");
+            model.addAttribute("name", name);
+            model.addAttribute("email", email);
+            model.addAttribute("role", role);
+            return "register";
+        }
+
         try {
             RegisterRequest request = RegisterRequest.builder()
                     .name(name)

@@ -109,6 +109,9 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testGetAvailableRoles_Success() throws Exception {
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(sampleUser));
+
+
         mockMvc.perform(get("/api/auth/roles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@example.com"))

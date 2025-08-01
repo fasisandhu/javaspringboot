@@ -6,25 +6,24 @@ import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import com.redmath.jobportal.exceptions.DuplicateEmailException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+//@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     public void register(RegisterRequest request) {
-        log.info("Attempting to register user with email: {}", request.getEmail());
+//        log.info("Attempting to register user with email: {}", request.getEmail());
 
         // Check for existing user
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            log.warn("Registration failed: email already exists - {}", request.getEmail());
+//            log.warn("Registration failed: email already exists - {}", request.getEmail());
             throw new DuplicateEmailException("A user with this email already exists");
         }
 
@@ -38,13 +37,13 @@ public class UserService {
                     .build();
 
             userRepository.save(user);
-            log.info("User registered successfully: {}", request.getEmail());
+//            log.info("User registered successfully: {}", request.getEmail());
 
         } catch (DataIntegrityViolationException e) {
-            log.error("Database constraint violation during registration for email: {}", request.getEmail(), e);
+//            log.error("Database constraint violation during registration for email: {}", request.getEmail(), e);
             throw new DuplicateEmailException("A user with this email already exists");
         } catch (Exception e) {
-            log.error("Unexpected error during registration for email: {}", request.getEmail(), e);
+//            log.error("Unexpected error during registration for email: {}", request.getEmail(), e);
             throw new UserRegistrationException("Registration failed due to an internal error", e);
         }
     }
