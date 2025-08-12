@@ -1,5 +1,6 @@
 package com.redmath.jobportal.application.service;
 
+import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
 import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
@@ -29,7 +30,7 @@ public class ApplicationService {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
 
-    public Application applyToJob(Long jobId, Authentication auth) {
+    public ApplicationDto applyToJob(Long jobId, Authentication auth) {
         String email = auth.getName();
 
         User user = userRepository.findByEmail(email)
@@ -49,7 +50,13 @@ public class ApplicationService {
                 .user(user)
                 .build();
 
-        return applicationRepository.save(application);
+        Application savedApplication = applicationRepository.save(application);
+
+        return new ApplicationDto(
+                savedApplication.getId(),
+                savedApplication.getJob().getId(),
+                "Application submitted successfully"
+        );
     }
 
     public List<ApplicationUserDto> getApplicationsByUser(Authentication auth) {

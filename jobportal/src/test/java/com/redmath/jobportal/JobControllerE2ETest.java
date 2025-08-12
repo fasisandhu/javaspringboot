@@ -5,6 +5,7 @@ import com.redmath.jobportal.auth.model.AuthProvider;
 import com.redmath.jobportal.auth.model.Role;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
+import com.redmath.jobportal.job.dto.JobCreateDto;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +83,149 @@ public class JobControllerE2ETest {
 
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
+    void testCreateJob_Success() throws Exception {
+        JobCreateDto newJobDto = JobCreateDto.builder()
+                .title("Senior Python Developer")
+                .description("Senior Python development position")
+                .company("Python Corp")
+                .remote(false)
+                .salary(90000.0)
+                .build();
+
+        mockMvc.perform(post("/api/v1/jobs")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newJobDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Senior Python Developer"))
+                .andExpect(jsonPath("$.company").value("Python Corp"))
+                .andExpect(jsonPath("$.remote").value(false))
+                .andExpect(jsonPath("$.salary").value(90000.0))
+                .andExpect(jsonPath("$.postedBy").value("employer@example.com"));
+
+        // Verify job was saved in database
+        var allJobs = jobRepository.findAll();
+        assertThat(allJobs).hasSize(3); // 1 from liquibase + 1 from setup + 1 new
+        var savedJob = allJobs.stream()
+                .filter(job -> "Senior Python Developer".equals(job.getTitle()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedJob.getPostedBy()).isEqualTo("employer@example.com");
+    }
+
+    @Test
+    @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
+    void testUpdateJob_Success() throws Exception {
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
+                .title("Senior Java Developer")
+                .description("Updated Java development position")
+                .company("Updated Tech Corp")
+                .remote(false)
+                .salary(85000.0)
+                .build();
+
+        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedJobDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Senior Java Developer"))
+                .andExpect(jsonPath("$.description").value("Updated Java development position"))
+                .andExpect(jsonPath("$.company").value("Updated Tech Corp"))
+                .andExpect(jsonPath("$.remote").value(false))
+                .andExpect(jsonPath("$.salary").value(85000.0));
+
+        // Verify job was updated in database
+        var updatedJobFromDb = jobRepository.findById(testJob.getId()).orElseThrow();
+        assertThat(updatedJobFromDb.getTitle()).isEqualTo("Senior Java Developer");
+        assertThat(updatedJobFromDb.getSalary()).isEqualTo(85000.0);
+    }
+
+    @Test
+    @WithMockUser(username = "another@example.com", roles = {"EMPLOYER"})
+    void testUpdateJob_Unauthorized() throws Exception {
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
+                .title("Unauthorized Update")
+                .description("Test description")
+                .company("Test Company")
+                .remote(true)
+                .salary(50000.0)
+                .build();
+
+        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedJobDto)))
+                .andExpect(status().isConflict());
+
+        // Verify job was not updated
+        var jobFromDb = jobRepository.findById(testJob.getId()).orElseThrow();
+        assertThat(jobFromDb.getTitle()).isEqualTo("Java Developer"); // Original title
+    }
+
+    @Test
+    @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
+    void testApplicantCannotCreateJob() throws Exception {
+        JobCreateDto newJobDto = JobCreateDto.builder()
+                .title("Unauthorized Job")
+                .description("Test description")
+                .company("Test Company")
+                .remote(true)
+                .salary(50000.0)
+                .build();
+
+        mockMvc.perform(post("/api/v1/jobs")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newJobDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
+    void testApplicantCannotUpdateJob() throws Exception {
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
+                .title("Unauthorized Update")
+                .description("Test description")
+                .company("Test Company")
+                .remote(true)
+                .salary(50000.0)
+                .build();
+
+        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedJobDto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testUnauthenticatedCannotAccessProtectedEndpoints() throws Exception {
+        JobCreateDto newJobDto = JobCreateDto.builder()
+                .title("Test Job")
+                .description("Test description")
+                .company("Test Company")
+                .remote(true)
+                .salary(50000.0)
+                .build();
+
+        mockMvc.perform(post("/api/v1/jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newJobDto)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newJobDto)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/v1/jobs/{id}", testJob.getId()))
+                .andExpect(status().isForbidden());
+    }
+
+    // Keep all other existing tests unchanged as they don't involve create/update operations
+    @Test
+    @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testGetAllJobs() throws Exception {
         mockMvc.perform(get("/api/v1/jobs"))
                 .andExpect(status().isOk())
@@ -112,84 +256,6 @@ public class JobControllerE2ETest {
 
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
-    void testCreateJob_Success() throws Exception {
-        Job newJob = Job.builder()
-                .title("Senior Python Developer")
-                .description("Senior Python development position")
-                .company("Python Corp")
-                .remote(false)
-                .salary(90000.0)
-                .build();
-
-        mockMvc.perform(post("/api/v1/jobs")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newJob)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Senior Python Developer"))
-                .andExpect(jsonPath("$.company").value("Python Corp"))
-                .andExpect(jsonPath("$.remote").value(false))
-                .andExpect(jsonPath("$.salary").value(90000.0))
-                .andExpect(jsonPath("$.postedBy").value("employer@example.com"));
-
-        // Verify job was saved in database
-        var allJobs = jobRepository.findAll();
-        assertThat(allJobs).hasSize(3); // 1 from liquibase + 1 from setup + 1 new
-        var savedJob = allJobs.stream()
-                .filter(job -> "Senior Python Developer".equals(job.getTitle()))
-                .findFirst()
-                .orElseThrow();
-        assertThat(savedJob.getPostedBy()).isEqualTo("employer@example.com");
-    }
-
-    @Test
-    @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
-    void testUpdateJob_Success() throws Exception {
-        Job updatedJob = Job.builder()
-                .title("Senior Java Developer")
-                .description("Updated Java development position")
-                .company("Updated Tech Corp")
-                .remote(false)
-                .salary(85000.0)
-                .build();
-
-        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedJob)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Senior Java Developer"))
-                .andExpect(jsonPath("$.description").value("Updated Java development position"))
-                .andExpect(jsonPath("$.company").value("Updated Tech Corp"))
-                .andExpect(jsonPath("$.remote").value(false))
-                .andExpect(jsonPath("$.salary").value(85000.0));
-
-        // Verify job was updated in database
-        var updatedJobFromDb = jobRepository.findById(testJob.getId()).orElseThrow();
-        assertThat(updatedJobFromDb.getTitle()).isEqualTo("Senior Java Developer");
-        assertThat(updatedJobFromDb.getSalary()).isEqualTo(85000.0);
-    }
-
-    @Test
-    @WithMockUser(username = "another@example.com", roles = {"EMPLOYER"})
-    void testUpdateJob_Unauthorized() throws Exception {
-        Job updatedJob = Job.builder()
-                .title("Unauthorized Update")
-                .build();
-
-        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedJob)))
-                .andExpect(status().isConflict());
-
-        // Verify job was not updated
-        var jobFromDb = jobRepository.findById(testJob.getId()).orElseThrow();
-        assertThat(jobFromDb.getTitle()).isEqualTo("Java Developer"); // Original title
-    }
-
-    @Test
-    @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testDeleteJob_Success() throws Exception {
         mockMvc.perform(delete("/api/v1/jobs/{id}", testJob.getId())
                         .with(csrf()))
@@ -214,34 +280,6 @@ public class JobControllerE2ETest {
 
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
-    void testApplicantCannotCreateJob() throws Exception {
-        Job newJob = Job.builder()
-                .title("Unauthorized Job")
-                .build();
-
-        mockMvc.perform(post("/api/v1/jobs")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newJob)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
-    void testApplicantCannotUpdateJob() throws Exception {
-        Job updatedJob = Job.builder()
-                .title("Unauthorized Update")
-                .build();
-
-        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedJob)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testApplicantCannotDeleteJob() throws Exception {
         mockMvc.perform(delete("/api/v1/jobs/{id}", testJob.getId())
                         .with(csrf()))
@@ -257,25 +295,5 @@ public class JobControllerE2ETest {
 
         mockMvc.perform(get("/api/v1/jobs/{id}", testJob.getId()))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    void testUnauthenticatedCannotAccessProtectedEndpoints() throws Exception {
-        Job newJob = Job.builder()
-                .title("Test Job")
-                .build();
-
-        mockMvc.perform(post("/api/v1/jobs")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newJob)))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(put("/api/v1/jobs/{id}", testJob.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newJob)))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(delete("/api/v1/jobs/{id}", testJob.getId()))
-                .andExpect(status().isForbidden());
     }
 }

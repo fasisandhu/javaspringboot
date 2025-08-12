@@ -1,8 +1,8 @@
 package com.redmath.jobportal.application.controller;
 
+import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
 import com.redmath.jobportal.application.dto.ApplicationUserDto;
-import com.redmath.jobportal.application.model.Application;
 import com.redmath.jobportal.application.service.ApplicationService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class ApplicatonController {
 
     @PostMapping("/{jobId}")
     @PreAuthorize("hasRole('APPLICANT')")
-    public Application apply(@PathVariable Long jobId, Authentication auth) {
+    public ApplicationDto apply(@PathVariable Long jobId, Authentication auth) {
         return applicationService.applyToJob(jobId, auth);
     }
 

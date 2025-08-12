@@ -5,6 +5,8 @@ import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import com.redmath.jobportal.exceptions.JobNotFoundException;
 import com.redmath.jobportal.exceptions.UnauthorizedJobAccessException;
+import com.redmath.jobportal.job.dto.JobCreateDto;
+import com.redmath.jobportal.job.dto.JobDto;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,27 +25,38 @@ public class JobService {
     private final UserRepository userRepository;
 
 
-    public List<Job> getAllJobs() {
-        return jobRepository.findAll();
+    public List<JobDto> getAllJobs() {
+        return jobRepository.findAll()
+                .stream()
+                .map(JobService::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public Job getJobById(Long id) {
-        return jobRepository.findById(id)
+    public JobDto getJobById(Long id) {
+        Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException("Job with ID " + id + " not found"));
+        return mapToDto(job);
     }
 
-    public Job createJob(Job job, Authentication authentication) {
-        job.setPostedBy(getLoggedInUser(authentication).getEmail());
-        return jobRepository.save(job);
+
+    public JobDto createJob(JobCreateDto jobDto, Authentication authentication) {
+        Job job = Job.builder()
+                .title(jobDto.getTitle())
+                .description(jobDto.getDescription())
+                .company(jobDto.getCompany())
+                .remote(jobDto.isRemote())
+                .salary(jobDto.getSalary())
+                .postedBy(getLoggedInUser(authentication).getEmail())
+                .build();
+
+        return mapToDto(jobRepository.save(job));
     }
 
-    public Job updateJob(Long id, Job updatedJob, Authentication authentication) {
+    public JobDto updateJob(Long id, JobCreateDto updatedJob, Authentication authentication) {
         Job existing = jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException("Job with ID " + id + " not found"));
 
         if (!existing.getPostedBy().equals(getLoggedInUser(authentication).getEmail())) {
-//            log.info("job.getPostedBy() = {}", existing.getPostedBy());
-//            log.info("Logged in user email = {}", getLoggedInUser(authentication).getEmail());
             throw new UnauthorizedJobAccessException("You are not authorized to update this job");
         }
 
@@ -52,7 +66,7 @@ public class JobService {
         existing.setRemote(updatedJob.isRemote());
         existing.setSalary(updatedJob.getSalary());
 
-        return jobRepository.save(existing);
+        return mapToDto(jobRepository.save(existing));
     }
 
     public void deleteJob(Long id, Authentication authentication) {
@@ -88,4 +102,17 @@ public class JobService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    public static JobDto mapToDto(Job job) {
+        return JobDto.builder()
+                .id(job.getId())
+                .title(job.getTitle())
+                .description(job.getDescription())
+                .company(job.getCompany())
+                .remote(job.isRemote())
+                .salary(job.getSalary())
+                .postedBy(job.getPostedBy())
+                .build();
+    }
+
 }

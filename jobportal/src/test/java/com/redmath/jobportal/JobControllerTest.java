@@ -3,6 +3,8 @@ package com.redmath.jobportal;
 import com.redmath.jobportal.exceptions.JobNotFoundException;
 import com.redmath.jobportal.exceptions.UnauthorizedJobAccessException;
 import com.redmath.jobportal.job.controller.JobController;
+import com.redmath.jobportal.job.dto.JobCreateDto;
+import com.redmath.jobportal.job.dto.JobDto;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.service.JobService;
 import org.junit.jupiter.api.Test;
@@ -15,7 +17,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Optional;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,8 +35,8 @@ public class JobControllerTest {
     @MockBean
     private JobService jobService;
 
-    private Job sampleJob() {
-        return Job.builder()
+    private JobDto sampleJobDto() {
+        return JobDto.builder()
                 .id(1L)
                 .title("Java Developer")
                 .description("Spring Boot Developer")
@@ -48,20 +50,23 @@ public class JobControllerTest {
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testCreateJob_AsEmployer_Success() throws Exception {
-        Mockito.when(jobService.createJob(any(Job.class), any())).thenReturn(sampleJob());
+        Mockito.when(jobService.createJob(any(JobCreateDto.class), any())).thenReturn(sampleJobDto());
 
         mockMvc.perform(post("/api/v1/jobs")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Java Developer\",\"description\":\"Spring Boot Developer\",\"company\":\"Redmath\",\"remote\":true,\"salary\":100000}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Java Developer"));
+                .andExpect(jsonPath("$.title").value("Java Developer"))
+                .andExpect(jsonPath("$.company").value("Redmath"))
+                .andExpect(jsonPath("$.salary").value(100000));
     }
 
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testCreateJob_AsApplicant_Forbidden() throws Exception {
         mockMvc.perform(post("/api/v1/jobs")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Java Developer\",\"description\":\"Spring Boot Developer\",\"company\":\"Redmath\",\"remote\":true,\"salary\":100000}"))
                 .andExpect(status().isForbidden());
@@ -70,12 +75,12 @@ public class JobControllerTest {
     @Test
     @WithMockUser(username = "employer@example.com", roles = {"EMPLOYER"})
     void testUpdateJob_OwnedJob_Success() throws Exception {
-        Mockito.when(jobService.updateJob(eq(1L), any(Job.class), any())).thenReturn(sampleJob());
+        Mockito.when(jobService.updateJob(eq(1L), any(JobCreateDto.class), any())).thenReturn(sampleJobDto());
 
         mockMvc.perform(put("/api/v1/jobs/1")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Updated Title\",\"description\":\"Updated Description\",\"company\":\"Redmath\",\"remote\":false,\"salary\":120000}")
-                        .with(csrf()))
+                        .content("{\"title\":\"Updated Title\",\"description\":\"Updated Description\",\"company\":\"Redmath\",\"remote\":false,\"salary\":120000}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Java Developer"));
     }
@@ -84,6 +89,7 @@ public class JobControllerTest {
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testUpdateJob_AsApplicant_Forbidden() throws Exception {
         mockMvc.perform(put("/api/v1/jobs/1")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Updated Title\"}"))
                 .andExpect(status().isForbidden());
@@ -111,31 +117,29 @@ public class JobControllerTest {
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testGetAllJobs_PublicAccess() throws Exception {
-        mockMvc.perform(get("/api/v1/jobs")
-                        .with(csrf()))
-                .andExpect(status().isOk());
+        Mockito.when(jobService.getAllJobs()).thenReturn(List.of(sampleJobDto()));
+
+        mockMvc.perform(get("/api/v1/jobs").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Java Developer"));
     }
 
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testGetJobById_Found() throws Exception {
-        // Mocking the service to return a job when the ID is found
-        Mockito.when(jobService.getJobById(1L)).thenReturn(sampleJob());
+        Mockito.when(jobService.getJobById(1L)).thenReturn(sampleJobDto());
 
-        mockMvc.perform(get("/api/v1/jobs/1")  // Change to GET instead of POST
-                        .with(csrf()))
+        mockMvc.perform(get("/api/v1/jobs/1").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
 
-
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testGetJobById_NotFound() throws Exception {
-        // Mocking the service to throw a JobNotFoundException
         Mockito.when(jobService.getJobById(2L)).thenThrow(new JobNotFoundException("Job with ID 2 not found"));
-        mockMvc.perform(get("/api/v1/jobs/2")
-                        .with(csrf()))
+
+        mockMvc.perform(get("/api/v1/jobs/2").with(csrf()))
                 .andExpect(status().isNotFound());
     }
 }

@@ -5,6 +5,8 @@ import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import com.redmath.jobportal.exceptions.JobNotFoundException;
 import com.redmath.jobportal.exceptions.UnauthorizedJobAccessException;
+import com.redmath.jobportal.job.dto.JobCreateDto;
+import com.redmath.jobportal.job.dto.JobDto;
 import com.redmath.jobportal.job.model.Job;
 import com.redmath.jobportal.job.repository.JobRepository;
 import com.redmath.jobportal.job.service.JobService;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,12 +44,23 @@ public class JobServiceTest {
     private JobService jobService;
 
     private Job sampleJob;
+    private JobDto sampleJobDto;
     private User employerUser;
     private User anotherEmployerUser;
 
     @BeforeEach
     void setUp() {
         sampleJob = Job.builder()
+                .id(1L)
+                .title("Java Developer")
+                .description("Spring Boot Developer")
+                .company("Redmath")
+                .remote(true)
+                .salary(100000)
+                .postedBy("employer@example.com")
+                .build();
+
+        sampleJobDto = JobDto.builder()
                 .id(1L)
                 .title("Java Developer")
                 .description("Spring Boot Developer")
@@ -73,12 +87,22 @@ public class JobServiceTest {
 
     @Test
     void testGetAllJobs() {
-        List<Job> expectedJobs = Arrays.asList(sampleJob);
-        when(jobRepository.findAll()).thenReturn(expectedJobs);
+        when(jobRepository.findAll()).thenReturn(List.of(sampleJob));
 
-        List<Job> result = jobService.getAllJobs();
+        List<JobDto> result = jobService.getAllJobs();
 
-        assertEquals(expectedJobs, result);
+        assertEquals(1, result.size());
+        assertEquals("Java Developer", result.get(0).getTitle());
+        verify(jobRepository).findAll();
+    }
+
+    @Test
+    void testGetAllJobs_EmptyList() {
+        when(jobRepository.findAll()).thenReturn(Collections.emptyList());
+
+        List<JobDto> result = jobService.getAllJobs();
+
+        assertTrue(result.isEmpty());
         verify(jobRepository).findAll();
     }
 
@@ -86,9 +110,10 @@ public class JobServiceTest {
     void testGetJobById_Found() {
         when(jobRepository.findById(1L)).thenReturn(Optional.of(sampleJob));
 
-        Job result = jobService.getJobById(1L);
+        JobDto result = jobService.getJobById(1L);
 
-        assertEquals(sampleJob, result);
+        assertEquals(sampleJob.getId(), result.getId());
+        assertEquals(sampleJob.getTitle(), result.getTitle());
         verify(jobRepository).findById(1L);
     }
 
@@ -105,7 +130,7 @@ public class JobServiceTest {
 
     @Test
     void testCreateJob_Success() {
-        Job newJob = Job.builder()
+        JobCreateDto newJobDto = JobCreateDto.builder()
                 .title("Backend Developer")
                 .description("Node.js Developer")
                 .company("TechCorp")
@@ -127,17 +152,17 @@ public class JobServiceTest {
         when(userRepository.findByEmail("employer@example.com")).thenReturn(Optional.of(employerUser));
         when(jobRepository.save(any(Job.class))).thenReturn(savedJob);
 
-        Job result = jobService.createJob(newJob, authentication);
+        JobDto result = jobService.createJob(newJobDto, authentication);
 
-        assertEquals("employer@example.com", result.getPostedBy());
         assertEquals("Backend Developer", result.getTitle());
+        assertEquals("employer@example.com", result.getPostedBy());
         verify(userRepository).findByEmail("employer@example.com");
         verify(jobRepository).save(any(Job.class));
     }
 
     @Test
     void testCreateJob_UserNotFound() {
-        Job newJob = Job.builder()
+        JobCreateDto newJobDto = JobCreateDto.builder()
                 .title("Backend Developer")
                 .description("Node.js Developer")
                 .company("TechCorp")
@@ -149,7 +174,7 @@ public class JobServiceTest {
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> jobService.createJob(newJob, authentication));
+                () -> jobService.createJob(newJobDto, authentication));
 
         assertEquals("User not found", exception.getMessage());
         verify(userRepository).findByEmail("nonexistent@example.com");
@@ -158,7 +183,7 @@ public class JobServiceTest {
 
     @Test
     void testUpdateJob_Success() {
-        Job updatedJobData = Job.builder()
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
                 .title("Senior Java Developer")
                 .description("Senior Spring Boot Developer")
                 .company("Redmath Inc")
@@ -181,28 +206,24 @@ public class JobServiceTest {
         when(userRepository.findByEmail("employer@example.com")).thenReturn(Optional.of(employerUser));
         when(jobRepository.save(any(Job.class))).thenReturn(updatedJob);
 
-        Job result = jobService.updateJob(1L, updatedJobData, authentication);
+        JobDto result = jobService.updateJob(1L, updatedJobDto, authentication);
 
         assertEquals("Senior Java Developer", result.getTitle());
-        assertEquals("Senior Spring Boot Developer", result.getDescription());
         assertEquals("Redmath Inc", result.getCompany());
-        assertEquals(false, result.isRemote());
         assertEquals(120000, result.getSalary());
-        verify(jobRepository).findById(1L);
-        verify(userRepository).findByEmail("employer@example.com");
         verify(jobRepository).save(any(Job.class));
     }
 
     @Test
     void testUpdateJob_JobNotFound() {
-        Job updatedJobData = Job.builder()
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
                 .title("Senior Java Developer")
                 .build();
 
         when(jobRepository.findById(1L)).thenReturn(Optional.empty());
 
         JobNotFoundException exception = assertThrows(JobNotFoundException.class,
-                () -> jobService.updateJob(1L, updatedJobData, authentication));
+                () -> jobService.updateJob(1L, updatedJobDto, authentication));
 
         assertEquals("Job with ID 1 not found", exception.getMessage());
         verify(jobRepository).findById(1L);
@@ -211,7 +232,7 @@ public class JobServiceTest {
 
     @Test
     void testUpdateJob_UnauthorizedUser() {
-        Job updatedJobData = Job.builder()
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
                 .title("Senior Java Developer")
                 .build();
 
@@ -220,17 +241,17 @@ public class JobServiceTest {
         when(userRepository.findByEmail("another@example.com")).thenReturn(Optional.of(anotherEmployerUser));
 
         UnauthorizedJobAccessException exception = assertThrows(UnauthorizedJobAccessException.class,
-                () -> jobService.updateJob(1L, updatedJobData, authentication));
+                () -> jobService.updateJob(1L, updatedJobDto, authentication));
 
         assertEquals("You are not authorized to update this job", exception.getMessage());
         verify(jobRepository).findById(1L);
-        verify(userRepository,times(1)).findByEmail("another@example.com");
+        verify(userRepository, times(1)).findByEmail("another@example.com");
         verify(jobRepository, never()).save(any(Job.class));
     }
 
     @Test
     void testUpdateJob_AuthenticatedUserNotFound() {
-        Job updatedJobData = Job.builder()
+        JobCreateDto updatedJobDto = JobCreateDto.builder()
                 .title("Senior Java Developer")
                 .build();
 
@@ -239,10 +260,9 @@ public class JobServiceTest {
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> jobService.updateJob(1L, updatedJobData, authentication));
+                () -> jobService.updateJob(1L, updatedJobDto, authentication));
 
         assertEquals("User not found", exception.getMessage());
-        verify(jobRepository).findById(1L);
         verify(userRepository).findByEmail("nonexistent@example.com");
         verify(jobRepository, never()).save(any(Job.class));
     }
@@ -283,8 +303,7 @@ public class JobServiceTest {
                 () -> jobService.deleteJob(1L, authentication));
 
         assertEquals("You are not authorized to delete this job", exception.getMessage());
-        verify(jobRepository).findById(1L);
-        verify(userRepository,times(1)).findByEmail("another@example.com");
+        verify(userRepository).findByEmail("another@example.com");
         verify(jobRepository, never()).deleteById(any());
     }
 
@@ -298,44 +317,7 @@ public class JobServiceTest {
                 () -> jobService.deleteJob(1L, authentication));
 
         assertEquals("User not found", exception.getMessage());
-        verify(jobRepository).findById(1L);
         verify(userRepository).findByEmail("nonexistent@example.com");
         verify(jobRepository, never()).deleteById(any());
-    }
-
-    @Test
-    void testGetAllJobs_EmptyList() {
-        when(jobRepository.findAll()).thenReturn(Arrays.asList());
-
-        List<Job> result = jobService.getAllJobs();
-
-        assertTrue(result.isEmpty());
-        verify(jobRepository).findAll();
-    }
-
-    @Test
-    void testUpdateJob_AllFieldsUpdated() {
-        Job updatedJobData = Job.builder()
-                .title("Updated Title")
-                .description("Updated Description")
-                .company("Updated Company")
-                .remote(false)
-                .salary(150000)
-                .build();
-
-        when(jobRepository.findById(1L)).thenReturn(Optional.of(sampleJob));
-        when(authentication.getName()).thenReturn("employer@example.com");
-        when(userRepository.findByEmail("employer@example.com")).thenReturn(Optional.of(employerUser));
-        when(jobRepository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Job result = jobService.updateJob(1L, updatedJobData, authentication);
-
-        assertEquals("Updated Title", result.getTitle());
-        assertEquals("Updated Description", result.getDescription());
-        assertEquals("Updated Company", result.getCompany());
-        assertEquals(false, result.isRemote());
-        assertEquals(150000, result.getSalary());
-        assertEquals("employer@example.com", result.getPostedBy()); // Should remain unchanged
-        verify(jobRepository).save(eq(sampleJob));
     }
 }

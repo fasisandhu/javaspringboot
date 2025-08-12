@@ -1,6 +1,7 @@
 package com.redmath.jobportal.job.controller;
 
-import com.redmath.jobportal.job.model.Job;
+import com.redmath.jobportal.job.dto.JobCreateDto;
+import com.redmath.jobportal.job.dto.JobDto;
 import com.redmath.jobportal.job.service.JobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,27 +40,25 @@ public class JobController {
 //    }
 
     @GetMapping
-    public List<Job> getAllJobs() {
+    public List<JobDto> getAllJobs() {
         return jobService.getAllJobs();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Job> getJobById(@PathVariable Long id) {
-        Job job = jobService.getJobById(id); // Service throws exception if not found
-        return ResponseEntity.ok(job);
+    public ResponseEntity<JobDto> getJobById(@PathVariable Long id) {
+        return ResponseEntity.ok(jobService.getJobById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<Job> createJob(@RequestBody Job job, Authentication authentication){
-        return ResponseEntity.ok(jobService.createJob(job, authentication));
+    public ResponseEntity<JobDto> createJob(@RequestBody JobCreateDto jobDto, Authentication authentication){
+        return ResponseEntity.ok(jobService.createJob(jobDto, authentication));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job, Authentication authentication) {
-        Job updatedJob = jobService.updateJob(id, job, authentication);
-        return ResponseEntity.ok(updatedJob);
+    public ResponseEntity<JobDto> updateJob(@PathVariable Long id, @RequestBody JobCreateDto job, Authentication authentication) {
+        return ResponseEntity.ok(jobService.updateJob(id, job, authentication));
     }
 
     @DeleteMapping("/{id}")
@@ -68,7 +67,4 @@ public class JobController {
         jobService.deleteJob(id, authentication);
         return ResponseEntity.noContent().build();
     }
-
-
-
 }

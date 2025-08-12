@@ -1,5 +1,6 @@
 package com.redmath.jobportal;
 
+import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
 import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
@@ -91,9 +92,11 @@ public class ApplicationServiceTest {
         when(applicationRepository.existsByUserAndJob(applicantUser, sampleJob)).thenReturn(false);
         when(applicationRepository.save(any(Application.class))).thenReturn(sampleApplication);
 
-        Application result = applicationService.applyToJob(101L, authentication);
+        ApplicationDto result = applicationService.applyToJob(101L, authentication);
 
-        assertEquals(sampleApplication, result);
+        assertEquals(1L, result.getId());
+        assertEquals(101L, result.getJobId());
+        assertEquals("Application submitted successfully", result.getMessage());
         verify(userRepository).findByEmail("applicant@example.com");
         verify(jobRepository).findById(101L);
         verify(applicationRepository).existsByUserAndJob(applicantUser, sampleJob);

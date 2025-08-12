@@ -1,6 +1,7 @@
 package com.redmath.jobportal;
 
 import com.redmath.jobportal.application.controller.ApplicatonController;
+import com.redmath.jobportal.application.dto.ApplicationDto;
 import com.redmath.jobportal.application.dto.ApplicationRecruiterDto;
 import com.redmath.jobportal.application.dto.ApplicationUserDto;
 import com.redmath.jobportal.application.model.Application;
@@ -42,13 +43,19 @@ public class ApplicationControllerTest {
                 .build();
     }
 
+    private ApplicationDto sampleApplicationDto() {
+        return new ApplicationDto(1L, 101L, "Application submitted successfully");
+    }
+
     @Test
     @WithMockUser(username = "applicant@example.com", roles = {"APPLICANT"})
     void testApplyToJob_AsApplicant_Success() throws Exception {
-        Mockito.when(applicationService.applyToJob(eq(101L), any())).thenReturn(sampleApplication());
+        Mockito.when(applicationService.applyToJob(eq(101L), any())).thenReturn(sampleApplicationDto());
 
         mockMvc.perform(post("/api/v1/application/101").with(csrf()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.message").value("Application submitted successfully"));
     }
 
     @Test
