@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 const RoleSelection = () => {
   const [selectedRole, setSelectedRole] = useState('');
-  const { selectRole } = useAuth();
+  const { selectRole, user } = useAuth();
   const navigate = useNavigate();
 
   // Fetch available roles
@@ -105,6 +105,20 @@ const RoleSelection = () => {
               </h4>
             </div>
             <div className="card-body">
+              {/* User Information Display */}
+              {user && (
+                <div className="alert alert-info mb-4">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-person-circle me-2" style={{ fontSize: '1.5rem' }}></i>
+                    <div>
+                      <strong>Welcome, {user.name || user.email || 'User'}!</strong>
+                      {user.email && <div className="text-muted small">{user.email}</div>}
+                      {user.provider && <div className="text-muted small">Signed in with {user.provider}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <p className="text-muted mb-4">
                 Please select your role to continue. This will determine what features are available to you.
               </p>

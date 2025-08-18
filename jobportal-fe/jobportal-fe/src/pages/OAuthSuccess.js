@@ -19,7 +19,7 @@ const OAuthSuccess = () => {
           localStorage.setItem('token', token);
           
           // Try to get user info
-          const response = await fetch('http://localhost:8080/api/auth/user-role', {
+          const response = await fetch('/api/auth/user-role', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',

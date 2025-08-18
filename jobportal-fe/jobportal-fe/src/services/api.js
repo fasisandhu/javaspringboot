@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
+// Remove hardcoded base URL - proxy will handle this
+// const API_BASE_URL = 'http://localhost:8080';
 
-// Create axios instance
+// Create axios instance with relative base URL
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -90,13 +91,6 @@ export const authAPI = {
     });
   },
 
-  // API-based login (alternative)
-  apiLogin: async (credentials) => {
-    return api.post('/api/login', {
-      email: credentials.email,
-      password: credentials.password,
-    });
-  },
   
   // Get available roles (for Google OAuth users)
   getRoles: () => api.get('/api/auth/roles'),
@@ -108,10 +102,14 @@ export const authAPI = {
   selectRole: (role) => api.post('/api/auth/select-role', { role }),
   
   // Google OAuth login (redirect to backend)
-  googleLogin: () => window.location.href = `${API_BASE_URL}/oauth2/authorization/google`,
+  googleLogin: () => {
+    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+  },
   
   // Test authentication by accessing protected endpoint
   getAllJobs: () => api.get('/api/v1/jobs'),
+  
+
 };
 
 // Job APIs

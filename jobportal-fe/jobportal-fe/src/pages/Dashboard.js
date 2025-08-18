@@ -8,6 +8,8 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+
+
   // Fetch data based on user role
   const { data: jobsResponse } = useQuery({
     queryKey: ['jobs'],

@@ -40,6 +40,8 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem('user');
       const oauthData = localStorage.getItem('oauth_data');
 
+
+
       // Check if we have OAuth data from the callback page
       if (oauthData) {
         try {
@@ -48,18 +50,29 @@ export const AuthProvider = ({ children }) => {
           const token = data.access_token;
           const roleSelected = data.role_selected;
           
+
+          
           if (token) {
             setStoredToken(token);
+            
+            // Create user object from OAuth data
+            const oauthUser = {
+              email: data.email || data.username || 'user@example.com',
+              name: data.name || data.firstName || data.lastName || data.email?.split('@')[0] || 'User',
+              id: data.id || data.userId,
+              provider: 'GOOGLE',
+              ...data // Include any other OAuth fields
+            };
             
             if (roleSelected === false) {
               // User needs to select role
               setRoleSelected(false);
-              setUser({ email: 'user@example.com' }); // We'll get the actual email later
+              setUser(oauthUser);
               toast.success('Google login successful! Please select your role.');
             } else {
               // User already has role selected
               setRoleSelected(true);
-              setUser({ email: 'user@example.com' });
+              setUser(oauthUser);
               toast.success('Google login successful!');
             }
             
@@ -67,29 +80,69 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('oauth_data');
           }
         } catch (error) {
+
           localStorage.removeItem('oauth_data');
         }
       } else if (storedToken && storedUser) {
         try {
-          // Check if user has selected a role
-          const roleResponse = await authAPI.getUserRole();
           const userData = JSON.parse(storedUser);
           
-          setUser(userData);
-          setStoredToken(storedToken);
-          setRoleSelected(true);
-        } catch (error) {
-          // If role not selected, check if token has role_selected: false
-          if (error.response?.status === 401) {
-            // Token might be expired or invalid
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setStoredToken(null);
-            setUser(null);
+
+          
+          // Check if user has already selected a role from stored data
+          if (userData.role && userData.role !== 'UNKNOWN') {
+
+            setUser(userData);
+            setStoredToken(storedToken);
+            setRoleSelected(true);
           } else {
-            // User needs to select role
-            setRoleSelected(false);
+
+            // Only make API call if we don't have valid role data
+            try {
+              const roleResponse = await authAPI.getUserRole();
+              const apiUserData = roleResponse.data;
+              
+
+              
+              if (apiUserData.role && apiUserData.role !== 'UNKNOWN') {
+                // User has role from API
+                const updatedUserData = { ...userData, ...apiUserData };
+                localStorage.setItem('user', JSON.stringify(updatedUserData));
+                setUser(updatedUserData);
+                setStoredToken(storedToken);
+                setRoleSelected(true);
+
+              } else {
+                // User needs to select role
+                setUser(userData);
+                setStoredToken(storedToken);
+                setRoleSelected(false);
+
+              }
+            } catch (apiError) {
+
+              // If API call fails, use stored data and don't make additional API calls
+              if (userData.role && userData.role !== 'UNKNOWN') {
+                setUser(userData);
+                setStoredToken(storedToken);
+                setRoleSelected(true);
+
+              } else {
+                setUser(userData);
+                setStoredToken(storedToken);
+                setRoleSelected(false);
+
+              }
+            }
           }
+        } catch (error) {
+          console.error('❌ Error parsing stored user data:', error);
+          // If parsing stored user fails, clear everything
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setStoredToken(null);
+          setUser(null);
+          setRoleSelected(false);
         }
       }
       setLoading(false);
@@ -122,7 +175,7 @@ export const AuthProvider = ({ children }) => {
           setStoredToken(token);
           
           // Try to get user info
-          const response = await fetch('http://localhost:8080/api/auth/user-role', {
+          const response = await fetch('/api/auth/user-role', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -131,17 +184,32 @@ export const AuthProvider = ({ children }) => {
           
           if (response.ok) {
             const userData = await response.json();
+
             
-            if (userData.role_selected === false) {
+            // Create a complete user object with all available information
+            const completeUserData = {
+              email: userData.email || userData.username || 'user@example.com',
+              name: userData.name || userData.firstName || userData.lastName || userData.email?.split('@')[0] || 'User',
+              id: userData.id || userData.userId,
+              role: userData.role || 'UNKNOWN',
+              role_selected: userData.role_selected !== false,
+              provider: 'GOOGLE',
+              ...userData // Include any other fields from the API
+            };
+            
+            if (userData.role_selected === false || !userData.role || userData.role === 'UNKNOWN') {
               // User needs to select role
               setRoleSelected(false);
-              setUser({ email: userData.email || 'user@example.com' });
+              setUser(completeUserData);
+              // Store user data temporarily (without role)
+              localStorage.setItem('user', JSON.stringify(completeUserData));
               window.history.replaceState({}, document.title, '/role-selection');
               toast.success('Google login successful! Please select your role.');
             } else {
               // User already has role selected
               setRoleSelected(true);
-              setUser({ email: userData.email || 'user@example.com', role: userData.role });
+              setUser(completeUserData);
+              localStorage.setItem('user', JSON.stringify(completeUserData));
               window.history.replaceState({}, document.title, '/dashboard');
               toast.success('Google login successful!');
             }
@@ -149,6 +217,7 @@ export const AuthProvider = ({ children }) => {
             throw new Error('Failed to get user info');
           }
         } catch (error) {
+
           toast.error('Failed to process OAuth token. Please try again.');
           window.history.replaceState({}, document.title, '/login');
         }
@@ -189,7 +258,7 @@ export const AuthProvider = ({ children }) => {
           userData = {
             email: credentials.email,
             role: userResponse.data.role || userResponse.data,
-            role_selected: userResponse.data.role_selected
+            role_selected: userResponse.data.role_selected !== false
           };
         } else {
           userData = {
@@ -204,7 +273,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
         
         setUser(userData);
-        setRoleSelected(true);
+        setRoleSelected(userData.role_selected);
         
         toast.success('Login successful!');
         return { success: true };
@@ -215,16 +284,16 @@ export const AuthProvider = ({ children }) => {
           const userData = { 
             email: credentials.email,
             role: 'UNKNOWN',
-            role_selected: true
+            role_selected: false
           };
           
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('user', JSON.stringify(userData));
           
           setUser(userData);
-          setRoleSelected(true);
+          setRoleSelected(false);
           
-          toast.success('Login successful!');
+          toast.success('Login successful! Please select your role.');
           return { success: true };
         } catch (authError) {
           // If we can't access protected endpoints, login failed
@@ -280,15 +349,38 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.selectRole(role);
       const { token: newToken, user: userData } = response.data;
       
-      setStoredToken(newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+
       
-      setUser(userData);
+      // Update token if provided
+      if (newToken) {
+        setStoredToken(newToken);
+      }
+      
+      // Merge existing user data with new role data, preserving all user information
+      const existingUser = user || {};
+      const updatedUserData = {
+        ...existingUser,           // Keep all existing user data (email, name, id, etc.)
+        ...userData,               // Add any new data from the API response
+        role: role,                // Set the selected role
+        role_selected: true,       // Mark role as selected
+        provider: existingUser.provider || 'GOOGLE' // Preserve provider info
+      };
+      
+
+      
+      // Store updated user data
+      localStorage.setItem('user', JSON.stringify(updatedUserData));
+      
+      // Update state
+      setUser(updatedUserData);
       setRoleSelected(true);
+      
+
       
       toast.success('Role selected successfully!');
       return { success: true };
     } catch (error) {
+
       const message = error.response?.data?.message || 'Role selection failed';
       toast.error(message);
       return { success: false, error: message };
@@ -328,6 +420,97 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Function to refresh authentication status (only when necessary)
+  const refreshAuthStatus = async (force = false) => {
+    // Don't refresh if we already have valid user data and role
+    if (!force && user && user.role && user.role !== 'UNKNOWN' && roleSelected) {
+      return;
+    }
+    const storedToken = getStoredToken();
+    if (storedToken) {
+      try {
+        const userResponse = await authAPI.getUserRole();
+        const userData = userResponse.data;
+        
+
+        
+        if (userData.role && userData.role !== 'UNKNOWN') {
+          // Merge existing user data with API data, preserving all user information
+          const updatedUserData = {
+            ...user,                    // Keep existing user data
+            ...userData,                // Add/update with API data
+            role: userData.role,
+            role_selected: true
+          };
+          
+          localStorage.setItem('user', JSON.stringify(updatedUserData));
+          setUser(updatedUserData);
+          setRoleSelected(true);
+
+        } else {
+          setRoleSelected(false);
+
+        }
+      } catch (error) {
+
+        // If API call fails, check if token is still valid
+        try {
+          await authAPI.getAllJobs();
+          // Token is valid, but user might need role selection
+          if (user && user.role && user.role !== 'UNKNOWN') {
+            setRoleSelected(true);
+
+          } else {
+            setRoleSelected(false);
+
+          }
+        } catch (authError) {
+          // Token is invalid, logout
+
+          logout();
+        }
+      }
+    } else {
+
+    }
+  };
+
+  // Manual refresh function for when user explicitly needs to refresh auth
+  const forceRefreshAuth = () => {
+    refreshAuthStatus(true);
+  };
+
+  // Function to fetch complete user profile information
+  const fetchUserProfile = async () => {
+    const storedToken = getStoredToken();
+    if (storedToken) {
+      try {
+        const userResponse = await authAPI.getUserRole();
+        const userData = userResponse.data;
+        
+
+        
+        // Merge with existing user data
+        const completeUserData = {
+          ...user,                    // Keep existing user data
+          ...userData,                // Add/update with API data
+          provider: user?.provider || 'GOOGLE' // Preserve provider info
+        };
+        
+        // Update localStorage and state
+        localStorage.setItem('user', JSON.stringify(completeUserData));
+        setUser(completeUserData);
+        
+
+        return completeUserData;
+      } catch (error) {
+
+        return null;
+      }
+    }
+    return null;
+  };
+
   const value = {
     user,
     token,
@@ -338,6 +521,9 @@ export const AuthProvider = ({ children }) => {
     googleLogin,
     selectRole,
     logout,
+    refreshAuthStatus,
+    forceRefreshAuth,
+    fetchUserProfile,
     isAuthenticated: !!token,
   };
 
