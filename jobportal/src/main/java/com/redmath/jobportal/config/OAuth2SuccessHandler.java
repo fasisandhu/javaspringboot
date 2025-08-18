@@ -98,7 +98,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
         Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
 
-        // Build redirect URL with token and role selection status
+//         Build redirect URL with token and role selection status
         String redirectUrl = buildRedirectUrl(jwt.getTokenValue(), user.getRole() != null);
 
 //        log.info("Redirecting OAuth2 user to frontend: {}", redirectUrl);

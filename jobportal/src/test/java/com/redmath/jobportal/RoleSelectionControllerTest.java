@@ -6,6 +6,7 @@ import com.redmath.jobportal.auth.model.Role;
 import com.redmath.jobportal.auth.model.AuthProvider;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redmath.jobportal.auth.services.RoleSelectionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +36,7 @@ public class RoleSelectionControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
-    private JwtEncoder jwtEncoder;
+    private RoleSelectionService roleSelectionService;  // Mock the service
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -68,7 +66,7 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testGetUserRole_Success() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(sampleUser));
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(sampleUser);
 
         mockMvc.perform(get("/api/auth/user-role"))
                 .andExpect(status().isOk())
@@ -80,7 +78,7 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "norole@example.com")
     void testGetUserRole_UserWithoutRole() throws Exception {
-        when(userRepository.findByEmail("norole@example.com")).thenReturn(Optional.of(userWithoutRole));
+        when(roleSelectionService.getUserByEmail("norole@example.com")).thenReturn(userWithoutRole);
 
         mockMvc.perform(get("/api/auth/user-role"))
                 .andExpect(status().isOk())
@@ -92,7 +90,7 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "notfound@example.com")
     void testGetUserRole_UserNotFound() throws Exception {
-        when(userRepository.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
+        when(roleSelectionService.getUserByEmail("notfound@example.com")).thenReturn(null);
 
         mockMvc.perform(get("/api/auth/user-role"))
                 .andExpect(status().isNotFound())
@@ -109,8 +107,7 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testGetAvailableRoles_Success() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(sampleUser));
-
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(sampleUser);
 
         mockMvc.perform(get("/api/auth/roles"))
                 .andExpect(status().isOk())
@@ -130,12 +127,10 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testSelectRole_Success() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userWithoutRole));
-        when(userRepository.save(any(User.class))).thenReturn(userWithoutRole);
-
-        Jwt mockJwt = mock(Jwt.class);
-        when(mockJwt.getTokenValue()).thenReturn("mock-jwt-token");
-        when(jwtEncoder.encode(any())).thenReturn(mockJwt);
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(userWithoutRole);
+        when(roleSelectionService.updateUserRole("test@example.com", "APPLICANT")).thenReturn(userWithoutRole);
+        when(roleSelectionService.generateJwtResponse("test@example.com", userWithoutRole))
+                .thenReturn(Map.of("token_type", "Bearer", "access_token", "mock-jwt-token", "expires_in", 3600));
 
         Map<String, String> request = new HashMap<>();
         request.put("role", "APPLICANT");
@@ -149,13 +144,13 @@ public class RoleSelectionControllerTest {
                 .andExpect(jsonPath("$.access_token").value("mock-jwt-token"))
                 .andExpect(jsonPath("$.expires_in").value(3600));
 
-        verify(userRepository).save(any(User.class));
+        verify(roleSelectionService).updateUserRole("test@example.com", "APPLICANT");
     }
 
     @Test
     @WithMockUser(username = "test@example.com")
     void testSelectRole_InvalidRole() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userWithoutRole));
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(userWithoutRole);
 
         Map<String, String> request = new HashMap<>();
         request.put("role", "INVALID_ROLE");
@@ -165,7 +160,7 @@ public class RoleSelectionControllerTest {
                         .content(objectMapper.writeValueAsString(request))
                         .with(csrf()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid role selected"));
+                .andExpect(jsonPath("$.error").value("User not found or invalid role"));
     }
 
     @Test
@@ -198,7 +193,7 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "notfound@example.com")
     void testSelectRole_UserNotFound() throws Exception {
-        when(userRepository.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
+        when(roleSelectionService.getUserByEmail("notfound@example.com")).thenReturn(null);
 
         Map<String, String> request = new HashMap<>();
         request.put("role", "APPLICANT");
@@ -207,8 +202,8 @@ public class RoleSelectionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(csrf()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("User not found"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("User not found or invalid role"));
     }
 
     @Test
@@ -227,12 +222,10 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testSelectRole_EmployerRole() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userWithoutRole));
-        when(userRepository.save(any(User.class))).thenReturn(userWithoutRole);
-
-        Jwt mockJwt = mock(Jwt.class);
-        when(mockJwt.getTokenValue()).thenReturn("mock-jwt-token");
-        when(jwtEncoder.encode(any())).thenReturn(mockJwt);
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(userWithoutRole);
+        when(roleSelectionService.updateUserRole("test@example.com", "EMPLOYER")).thenReturn(userWithoutRole);
+        when(roleSelectionService.generateJwtResponse("test@example.com", userWithoutRole))
+                .thenReturn(Map.of("token_type", "Bearer", "access_token", "mock-jwt-token", "expires_in", 3600));
 
         Map<String, String> request = new HashMap<>();
         request.put("role", "EMPLOYER");
@@ -249,12 +242,10 @@ public class RoleSelectionControllerTest {
     @Test
     @WithMockUser(username = "test@example.com")
     void testSelectRole_CaseInsensitive() throws Exception {
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userWithoutRole));
-        when(userRepository.save(any(User.class))).thenReturn(userWithoutRole);
-
-        Jwt mockJwt = mock(Jwt.class);
-        when(mockJwt.getTokenValue()).thenReturn("mock-jwt-token");
-        when(jwtEncoder.encode(any())).thenReturn(mockJwt);
+        when(roleSelectionService.getUserByEmail("test@example.com")).thenReturn(userWithoutRole);
+        when(roleSelectionService.updateUserRole("test@example.com", "applicant")).thenReturn(userWithoutRole);
+        when(roleSelectionService.generateJwtResponse("test@example.com", userWithoutRole))
+                .thenReturn(Map.of("token_type", "Bearer", "access_token", "mock-jwt-token", "expires_in", 3600));
 
         Map<String, String> request = new HashMap<>();
         request.put("role", "applicant");

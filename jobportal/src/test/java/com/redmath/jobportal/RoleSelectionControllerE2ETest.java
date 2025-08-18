@@ -190,7 +190,7 @@ public class RoleSelectionControllerE2ETest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid role selected"));
+                .andExpect(jsonPath("$.error").value("User not found or invalid role"));
 
         // Verify role was not changed in database
         var user = userRepository.findByEmail("oauth@example.com").orElseThrow();
@@ -247,8 +247,8 @@ public class RoleSelectionControllerE2ETest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("User not found"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("User not found or invalid role"));
     }
 
     @Test

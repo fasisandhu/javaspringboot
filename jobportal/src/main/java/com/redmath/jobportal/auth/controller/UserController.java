@@ -7,7 +7,6 @@ import com.redmath.jobportal.auth.model.Role;
 import com.redmath.jobportal.auth.services.UserService;
 import com.redmath.jobportal.exceptions.DuplicateEmailException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,7 +18,6 @@ import java.util.Map;
 @Controller
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@Slf4j
 public class UserController {
     private final UserService userService;
 

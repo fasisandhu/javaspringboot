@@ -6,13 +6,11 @@ import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import com.redmath.jobportal.exceptions.DuplicateEmailException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-//@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -39,9 +37,6 @@ public class UserService {
             userRepository.save(user);
 //            log.info("User registered successfully: {}", request.getEmail());
 
-        } catch (DataIntegrityViolationException e) {
-//            log.error("Database constraint violation during registration for email: {}", request.getEmail(), e);
-            throw new DuplicateEmailException("A user with this email already exists");
         } catch (Exception e) {
 //            log.error("Unexpected error during registration for email: {}", request.getEmail(), e);
             throw new UserRegistrationException("Registration failed due to an internal error", e);

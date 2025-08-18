@@ -14,7 +14,6 @@ import com.redmath.jobportal.job.repository.JobRepository;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
@@ -31,10 +29,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
 
     public ApplicationDto applyToJob(Long jobId, Authentication auth) {
-        String email = auth.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        User user = getLoggedInUser(auth);
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new JobNotFoundException("Job not found with id: " + jobId));

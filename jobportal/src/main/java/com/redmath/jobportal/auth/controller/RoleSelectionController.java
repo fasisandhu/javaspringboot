@@ -1,33 +1,27 @@
 package com.redmath.jobportal.auth.controller;
 
-import com.redmath.jobportal.auth.model.Role;
 import com.redmath.jobportal.auth.model.User;
-import com.redmath.jobportal.auth.repository.UserRepository;
+import com.redmath.jobportal.auth.services.RoleSelectionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 public class RoleSelectionController {
 
-    private final UserRepository userRepository;
-    private final JwtEncoder jwtEncoder;
+    private final RoleSelectionService roleSelectionService;
 
-    public RoleSelectionController(UserRepository userRepository, JwtEncoder jwtEncoder) {
-        this.userRepository = userRepository;
-        this.jwtEncoder = jwtEncoder;
+    public RoleSelectionController(RoleSelectionService roleSelectionService) {
+        this.roleSelectionService = roleSelectionService;
     }
+
     @GetMapping("/user-role")
     public ResponseEntity<Map<String, Object>> getUserRole(Principal principal) {
         if (principal == null) {
@@ -39,7 +33,7 @@ public class RoleSelectionController {
             return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
         }
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = roleSelectionService.getUserByEmail(email);
         if (user == null) {
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
@@ -63,7 +57,7 @@ public class RoleSelectionController {
             return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
         }
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = roleSelectionService.getUserByEmail(email);
         if (user == null) {
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
@@ -89,48 +83,19 @@ public class RoleSelectionController {
             return ResponseEntity.status(400).body(Map.of("error", "Role is required"));
         }
 
+
         String email = getEmailFromPrincipal(principal);
         if (email == null) {
-            return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
+            return ResponseEntity.status(404).body(Map.of("error", "Email not found"));
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElse(null);
-
+        User user = roleSelectionService.updateUserRole(email, role);
         if (user == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            return ResponseEntity.status(400).body(Map.of("error", "User not found or invalid role"));
         }
 
-        try {
-            Role selectedRole = Role.valueOf(role.toUpperCase(Locale.ENGLISH));
-            user.setRole(selectedRole);
-            userRepository.save(user);
-
-            Map<String, Object> tokenResponse = generateJwtResponse(email, user);
-            return ResponseEntity.ok(tokenResponse);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(Map.of("error", "Invalid role selected"));
-        }
-    }
-
-    private Map<String, Object> generateJwtResponse(String email, User user) {
-        long expirySeconds = 3600;
-
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .subject(email)
-                .claim("role", user.getRole().name())
-                .expiresAt(Instant.now().plusSeconds(expirySeconds))
-                .build();
-
-        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
-        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("token_type", "Bearer");
-        response.put("access_token", jwt.getTokenValue());
-        response.put("expires_in", expirySeconds);
-
-        return response;
+        Map<String, Object> tokenResponse = roleSelectionService.generateJwtResponse(email, user);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     private String getEmailFromPrincipal(Principal principal) {
