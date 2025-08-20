@@ -33,10 +33,15 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const result = await register(formData);
+      // Remove confirmPassword from the data sent to API
+      const { confirmPassword, ...registrationData } = formData;
+      const result = await register(registrationData);
+      
       if (result.success) {
         toast.success('Registration successful! Please login.');
         navigate('/login');
+      } else {
+        toast.error(result.error || 'Registration failed');
       }
     } catch (error) {
       toast.error('Registration failed. Please try again.');
@@ -308,4 +313,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

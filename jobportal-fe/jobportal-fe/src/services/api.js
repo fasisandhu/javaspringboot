@@ -1,18 +1,13 @@
 import axios from 'axios';
 
-// Remove hardcoded base URL - proxy will handle this
-// const API_BASE_URL = 'http://localhost:8080';
-
-// Create axios instance with relative base URL
 const api = axios.create({
   baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for CSRF tokens
+  withCredentials: true, 
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -26,7 +21,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -46,7 +40,7 @@ export const authAPI = {
   // Get CSRF token
   getCsrfToken: async () => {
     try {
-      const response = await api.get('/login');
+      const response = await api.get('../login');
       const html = response.data;
       const csrfMatch = html.match(/name="_csrf" type="hidden" value="([^"]+)"/);
       const token = csrfMatch ? csrfMatch[1] : null;
@@ -92,45 +86,40 @@ export const authAPI = {
   },
 
   
-  // Get available roles (for Google OAuth users)
-  getRoles: () => api.get('/api/auth/roles'),
+  getRoles: () => api.get('../api/auth/roles'),
   
-  // Get current user role
-  getUserRole: () => api.get('/api/auth/user-role'),
+  getUserRole: () => api.get('../api/auth/user-role'),
   
-  // Select role (for Google OAuth users)
-  selectRole: (role) => api.post('/api/auth/select-role', { role }),
+  selectRole: (role) => api.post('../api/auth/select-role', { role }),
   
-  // Google OAuth login (redirect to backend)
   googleLogin: () => {
     window.location.href = 'http://localhost:8080/oauth2/authorization/google';
   },
   
-  // Test authentication by accessing protected endpoint
-  getAllJobs: () => api.get('/api/v1/jobs'),
+  getAllJobs: () => api.get('../api/v1/jobs'),
   
 
 };
 
 // Job APIs
 export const jobAPI = {
-  getAllJobs: () => api.get('/api/v1/jobs'),
-  getJob: (id) => api.get(`/api/v1/jobs/${id}`),
-  createJob: (jobData) => api.post('/api/v1/jobs', jobData),
-  updateJob: (id, jobData) => api.put(`/api/v1/jobs/${id}`, jobData),
-  deleteJob: (id, jobData) => api.delete(`/api/v1/jobs/${id}`, { data: jobData }),
+  getAllJobs: () => api.get('../api/v1/jobs'),
+  getJob: (id) => api.get(`../../api/v1/jobs/${id}`),
+  createJob: (jobData) => api.post('../api/v1/jobs', jobData),
+  updateJob: (id, jobData) => api.put(`../../api/v1/jobs/${id}`, jobData),
+  deleteJob: (id, jobData) => api.delete(`../api/v1/jobs/${id}`, { data: jobData }),
 };
 
 // Application APIs
 export const applicationAPI = {
-  applyForJob: (jobId) => api.post(`/api/v1/application/${jobId}`),
-  getMyApplications: () => api.get('/api/v1/application/my'),
-  getRecruiterApplications: () => api.get('/api/v1/application/recruiter/all'),
-  getJobApplications: (jobId) => api.get(`/api/v1/application/recruiter/job/${jobId}`),
-  // Note: These endpoints might not exist in the current API, but we'll include them for completeness
-  getApplication: (id) => api.get(`/api/v1/application/${id}`),
-  updateApplication: (id, data) => api.put(`/api/v1/application/${id}`, data),
-  deleteApplication: (id) => api.delete(`/api/v1/application/${id}`),
-};
+  applyForJob: (jobId) => api.post(`../api/v1/application/${jobId}`),
+  getMyApplications: () => api.get('../api/v1/application/my'),
+  getRecruiterApplications: () => api.get('../api/v1/application/recruiter/all'),
+  getJobApplications: (jobId) => api.get(`../api/v1/application/recruiter/job/${jobId}`),
 
-export default api; 
+  // getApplication: (id) => api.get(`../api/v1/application/${id}`),
+  // updateApplication: (id, data) => api.put(`../api/v1/application/${id}`, data),
+  // deleteApplication: (id) => api.delete(`api/v1/application/${id}`),
+}
+
+export default api;

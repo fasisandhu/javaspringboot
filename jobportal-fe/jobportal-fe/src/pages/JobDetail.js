@@ -124,15 +124,19 @@ const JobDetail = () => {
             </div>
             <div className="d-flex gap-2">
               {user?.role === 'EMPLOYER' && (
-                <>
-                  <button 
-                    className="btn btn-outline-primary"
-                    onClick={() => navigate(`/jobs/${id}/edit`)}
-                  >
-                    <i className="bi bi-pencil me-2"></i>
-                    Edit
-                  </button>
-                </>
+                <button 
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    if (job.employerId !== user.id) {
+                      toast.error('You are not authorized to edit this job');
+                      return;
+                    }
+                    navigate(`/jobs/${id}/edit`);
+                  }}
+                >
+                  <i className="bi bi-pencil me-2"></i>
+                  Edit
+                </button>
               )}
               {user?.role === 'APPLICANT' && (
                 <button 
@@ -258,4 +262,4 @@ const JobDetail = () => {
   );
 };
 
-export default JobDetail; 
+export default JobDetail;

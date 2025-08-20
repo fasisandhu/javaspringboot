@@ -66,8 +66,13 @@ const JobForm = () => {
       navigate('/jobs');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to update job');
-    },
+      if (error.response?.status === 409) {
+        toast.error('You are not authorized to edit this job');
+        navigate('/jobs');
+        return;
+      }
+      toast.error('Failed to update job. Please try again.');
+    }
   });
 
   useEffect(() => {
@@ -256,4 +261,4 @@ const JobForm = () => {
   );
 };
 
-export default JobForm; 
+export default JobForm;
