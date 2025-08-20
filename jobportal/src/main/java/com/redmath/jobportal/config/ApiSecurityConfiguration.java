@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -47,10 +46,7 @@ import java.time.Instant;
 public class ApiSecurityConfiguration {
     private final CustomUserDetailsService customUserDetailsService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
-
-    @Value("${jwt.signing.key}")
-    private byte[] signingKey;
-
+    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtEncoder jwtEncoder) throws Exception {
 

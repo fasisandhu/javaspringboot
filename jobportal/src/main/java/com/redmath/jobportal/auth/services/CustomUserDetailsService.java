@@ -25,6 +25,7 @@ import java.util.Optional;
 public class CustomUserDetailsService extends DefaultOAuth2UserService implements UserDetailsService {
     private final UserRepository userRepository;
 
+    // UserDetailsService Method
     @Override
     public UserDetails loadUserByUsername(String email) {
 
@@ -43,6 +44,7 @@ public class CustomUserDetailsService extends DefaultOAuth2UserService implement
         }
     }
 
+    // OAuth2UserService Methods
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
@@ -88,7 +90,7 @@ public class CustomUserDetailsService extends DefaultOAuth2UserService implement
             newUser.setName(name != null ? name : "OAuth2 User");
             newUser.setPassword(""); // No password for OAuth users
             newUser.setProvider(AuthProvider.GOOGLE);
-            // Note: Role will be set during role selection
+            //Role will be set during role selection
 
             User savedUser = userRepository.save(newUser);
             return savedUser;

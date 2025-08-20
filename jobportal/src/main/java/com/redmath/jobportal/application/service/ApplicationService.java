@@ -69,8 +69,13 @@ public class ApplicationService {
         User employer = getLoggedInUser(auth);
         List<Job> jobsPosted = jobRepository.findByPostedBy(employer.getEmail());
 
+        // Extract job IDs for efficient comparison
+        List<Long> jobIds = jobsPosted.stream()
+                .map(Job::getId)
+                .collect(Collectors.toList());
+
         return applicationRepository.findAll().stream()
-                .filter(app -> jobsPosted.contains(app.getJob()))
+                .filter(app -> jobIds.contains(app.getJob().getId()))
                 .map(app -> new ApplicationRecruiterDto(
                         app.getId(),
                         app.getJob().getId(),

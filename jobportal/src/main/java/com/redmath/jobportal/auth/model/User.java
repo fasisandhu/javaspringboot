@@ -28,5 +28,14 @@ public class User {
     @Enumerated(EnumType.STRING)
     private AuthProvider provider;
 
-    // Getters and setters
+
+    // Copy constructor
+    public User(User user) {
+        this.id = user.id;
+        this.email = user.email;
+        this.password = user.password;
+        this.name = user.name;
+        this.role = user.role;
+        this.provider = user.provider;
+    }
 }

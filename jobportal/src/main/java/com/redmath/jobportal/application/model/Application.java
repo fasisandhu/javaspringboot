@@ -22,5 +22,11 @@ public class Application {
     @ManyToOne(optional = false)
     private User user;
 
+    public Job getJob() {
+        return new Job(this.job);
+    }
 
+    public User getUser() {
+        return new User(this.user);
+    }
 }

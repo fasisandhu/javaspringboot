@@ -111,21 +111,6 @@ public class OAuth2SuccessHandlerTest {
     }
 
     @Test
-    void testOnAuthenticationSuccess_NewUser() throws Exception {
-        when(oAuth2AuthenticationToken.getPrincipal()).thenReturn(oAuth2User);
-        when(oAuth2User.getAttributes()).thenReturn(userAttributes);
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
-        when(jwtEncoder.encode(any(JwtEncoderParameters.class))).thenReturn(jwt);
-        when(jwt.getTokenValue()).thenReturn("mock-jwt-token");
-
-        oAuth2SuccessHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-
-        verify(userRepository).save(any(User.class));
-        verify(response).sendRedirect("http://localhost:3000/auth/role-selection?token=mock-jwt-token");
-    }
-
-    @Test
     void testOnAuthenticationSuccess_InvalidAuthenticationType() throws Exception {
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, nonOAuth2Authentication);
 
@@ -202,46 +187,4 @@ public class OAuth2SuccessHandlerTest {
         verify(response).sendRedirect("http://localhost:3000/auth/success?token=mock-jwt-token");
     }
 
-    @Test
-    void testOnAuthenticationSuccess_NameFromAlternativeAttribute() throws Exception {
-        Map<String, Object> attributesWithLoginName = new HashMap<>();
-        attributesWithLoginName.put("email", "test@example.com");
-        attributesWithLoginName.put("login", "johndoe");
-
-        when(oAuth2AuthenticationToken.getPrincipal()).thenReturn(oAuth2User);
-        when(oAuth2User.getAttributes()).thenReturn(attributesWithLoginName);
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            assertEquals("johndoe", user.getName());
-            return user;
-        });
-        when(jwtEncoder.encode(any(JwtEncoderParameters.class))).thenReturn(jwt);
-        when(jwt.getTokenValue()).thenReturn("mock-jwt-token");
-
-        oAuth2SuccessHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-
-        verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void testOnAuthenticationSuccess_NoNameAttribute() throws Exception {
-        Map<String, Object> attributesWithoutName = new HashMap<>();
-        attributesWithoutName.put("email", "test@example.com");
-
-        when(oAuth2AuthenticationToken.getPrincipal()).thenReturn(oAuth2User);
-        when(oAuth2User.getAttributes()).thenReturn(attributesWithoutName);
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            assertEquals("Unknown", user.getName());
-            return user;
-        });
-        when(jwtEncoder.encode(any(JwtEncoderParameters.class))).thenReturn(jwt);
-        when(jwt.getTokenValue()).thenReturn("mock-jwt-token");
-
-        oAuth2SuccessHandler.onAuthenticationSuccess(request, response, oAuth2AuthenticationToken);
-
-        verify(userRepository).save(any(User.class));
-    }
 }

@@ -250,9 +250,6 @@
                         <configuration>
                             <dataFile>target/jacoco.exec</dataFile>
                             <outputDirectory>target/my-reports</outputDirectory>
-                            <!--                            <includes>-->
-                            <!--                                <include>**/controller/**</include>-->
-                            <!--                            </includes>-->
                         </configuration>
                     </execution>
                     <execution>

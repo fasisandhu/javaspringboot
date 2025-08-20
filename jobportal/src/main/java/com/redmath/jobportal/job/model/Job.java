@@ -27,4 +27,14 @@ public class Job {
     @Column(nullable = false)
     private String postedBy;
 
+    // Copy constructor
+    public Job(Job other) {
+        this.id = other.id;
+        this.title = other.title;
+        this.description = other.description;
+        this.company = other.company;
+        this.remote = other.remote;
+        this.salary = other.salary;
+        this.postedBy = other.postedBy;
+    }
 }

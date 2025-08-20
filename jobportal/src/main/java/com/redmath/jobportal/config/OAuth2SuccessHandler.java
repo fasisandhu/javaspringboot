@@ -1,6 +1,5 @@
 package com.redmath.jobportal.config;
 
-import com.redmath.jobportal.auth.model.AuthProvider;
 import com.redmath.jobportal.auth.model.User;
 import com.redmath.jobportal.auth.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -48,7 +47,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauth2User = oauth2Token.getPrincipal();
         Map<String, Object> attributes = oauth2User.getAttributes();
-
         if (attributes == null || attributes.isEmpty()) {
 //            log.error("OAuth2 user attributes are null or empty");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "OAuth2 provider didn't return user attributes");
@@ -63,18 +61,22 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         Optional<User> userOptional = userRepository.findByEmail(email);
-        User user;
+        User user = userOptional.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (userOptional.isPresent()) {
-            user = userOptional.get();
-        } else {
-            // Create new user if doesn't exist
-            user = new User();
-            user.setEmail(email);
-            user.setName(getNameFromAttributes(attributes));
-            user.setProvider(AuthProvider.GOOGLE);
-            userRepository.save(user);
-        }
+
+//        Optional<User> userOptional = userRepository.findByEmail(email);
+//        User user;
+//
+//        if (userOptional.isPresent()) {
+//            user = userOptional.get();
+//        } else {
+//            // Create new user if doesn't exist
+//            user = new User();
+//            user.setEmail(email);
+//            user.setName(getNameFromAttributes(attributes));
+//            user.setProvider(AuthProvider.GOOGLE);
+//            userRepository.save(user);
+//        }
 
         // Generate JWT and redirect to frontend
         redirectToFrontendWithToken(response, email, user);
@@ -127,12 +129,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         return email;
     }
 
-    private String getNameFromAttributes(Map<String, Object> attributes) {
-        String name = (String) attributes.get("name");
-        if (name == null) {
-            name = (String) attributes.get("login");
-        }
-        return name != null ? name : "Unknown";
-    }
+//    private String getNameFromAttributes(Map<String, Object> attributes) {
+//        String name = (String) attributes.get("name");
+//        if (name == null) {
+//            name = (String) attributes.get("login");
+//        }
+//        return name != null ? name : "Unknown";
+//    }
 
 }

@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CustomUserDetails implements UserDetails, OAuth2User {
@@ -15,46 +16,44 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     private final Map<String, Object> attributes;
 
     public CustomUserDetails(User user) {
-        this.user = user;
+        this.user = new User(user);
         this.needsRoleSelection = user.getRole() == null;
         this.attributes = Collections.emptyMap();
     }
 
     public CustomUserDetails(User user, boolean needsRoleSelection) {
-        this.user = user;
+        this.user = new User(user);
         this.needsRoleSelection = needsRoleSelection;
         this.attributes = Collections.emptyMap();
     }
 
-    // New constructor for OAuth2 with attributes
     public CustomUserDetails(User user, Map<String, Object> attributes) {
-        this.user = user;
+        this.user = new User(user);
         this.needsRoleSelection = user.getRole() == null;
         this.attributes = attributes != null ? attributes : Collections.emptyMap();
     }
 
     public CustomUserDetails(User user, boolean needsRoleSelection, Map<String, Object> attributes) {
-        this.user = user;
+        this.user = new User(user);
         this.needsRoleSelection = needsRoleSelection;
         this.attributes = attributes != null ? attributes : Collections.emptyMap();
     }
 
-    @Override
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
+    // OAuth2User methods
     @Override
     public String getName() {
         return user.getEmail();
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (user.getRole() == null) {
-            return Collections.emptyList();
-        }
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+    public Map<String, Object> getAttributes() {
+        return new HashMap<>(attributes);
+    }
+
+    // UserDetails methods
+    @Override
+    public String getUsername() {
+        return user.getEmail();
     }
 
     @Override
@@ -63,8 +62,11 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     }
 
     @Override
-    public String getUsername() {
-        return user.getEmail();
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (user.getRole() == null) {
+            return Collections.emptyList();
+        }
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
     }
 
     @Override
@@ -87,8 +89,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return true;
     }
 
+    //Custom Functions
     public User getUser() {
-        return user;
+        return new User(user);
     }
 
     public boolean needsRoleSelection() {
