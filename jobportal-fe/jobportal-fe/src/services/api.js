@@ -38,17 +38,27 @@ api.interceptors.response.use(
 // Authentication APIs
 export const authAPI = {
   // Get CSRF token
-  getCsrfToken: async () => {
-    try {
-      const response = await api.get('../login');
-      const html = response.data;
-      const csrfMatch = html.match(/name="_csrf" type="hidden" value="([^"]+)"/);
-      const token = csrfMatch ? csrfMatch[1] : null;
-      return token;
-    } catch (error) {
-      return null;
+getCsrfToken: async () => {
+  try {
+    // Make the request to the endpoint (e.g., login or any other endpoint)
+    const response = await api.get('../login');
+    
+    // Check for the XSRF-TOKEN cookie in the response headers (if the cookie is set in the response)
+    const xsrfCookie = response.headers['set-cookie']?.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+    
+    if (xsrfCookie) {
+      // Extract the token value from the cookie
+      const token = xsrfCookie.split(';')[0].split('=')[1];
+      return token || null;
     }
-  },
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting CSRF token:', error);
+    return null;
+  }
+},
+
 
   // Form-based registration
   register: async (userData) => {
@@ -107,7 +117,7 @@ export const jobAPI = {
   getJob: (id) => api.get(`../../api/v1/jobs/${id}`),
   createJob: (jobData) => api.post('../api/v1/jobs', jobData),
   updateJob: (id, jobData) => api.put(`../../api/v1/jobs/${id}`, jobData),
-  deleteJob: (id, jobData) => api.delete(`../api/v1/jobs/${id}`, { data: jobData }),
+  deleteJob: (id, jobData) => api.delete(`../api/v1/jobs/${id}`),
 };
 
 // Application APIs

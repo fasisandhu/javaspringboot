@@ -11,7 +11,6 @@ import JobList from './pages/JobList';
 import JobDetail from './pages/JobDetail';
 import JobForm from './pages/JobForm';
 import ApplicationList from './pages/ApplicationList';
-import ApplicationDetail from './pages/ApplicationDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RoleSelection from './pages/RoleSelection';
@@ -89,14 +88,6 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <ApplicationList />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/applications/:id"
-                    element={
-                      <ProtectedRoute>
-                        <ApplicationDetail />
                       </ProtectedRoute>
                     }
                   />
